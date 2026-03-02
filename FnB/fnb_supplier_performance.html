@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Performance & Yield</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Orbitron:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        space: '#020408',
+                        panel: 'rgba(10, 20, 30, 0.7)',
+                        gold: '#d4af37',
+                        bronze: '#806b45',
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        inter: ['Inter', 'sans-serif'],
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Custom Webkit Scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(212, 175, 55, 0.5); }
+
+        /* Glassmorphism utility */
+        .glass-panel {
+            background-color: rgba(10, 20, 30, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .glass-panel:hover { border-color: rgba(212, 175, 55, 0.3); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); }
+
+        /* Custom Select Styling */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d4af37' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+        }
+
+        body { background-color: transparent; color: #e2e8f0; }
+    </style>
+</head>
+
+<body class="font-inter p-6 space-y-8 h-screen overflow-y-auto pb-24 relative">
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
+                <i data-lucide="truck" class="w-6 h-6 mr-3"></i> Supplier Performance
+            </h3>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Raw Ingredient & Retail Yield Accountability</p>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+            <div class="glass-panel rounded-lg p-1 flex items-center space-x-1 border-gold/20 shadow-[0_4px_15px_rgba(0,0,0,0.3)]">
+                <button class="px-4 py-1.5 text-sm font-bold rounded bg-gold/20 text-gold border border-gold/50 shadow-[0_0_10px_rgba(212,175,55,0.2)] transition-all">Today</button>
+                <button class="px-4 py-1.5 text-sm font-medium rounded text-gray-400 hover:text-gray-200 hover:bg-white/5 transition-colors">7D</button>
+                <button class="px-4 py-1.5 text-sm font-medium rounded text-gray-400 hover:text-gray-200 hover:bg-white/5 transition-colors">MTD</button>
+                <button class="px-4 py-1.5 text-sm font-medium rounded text-gray-400 hover:text-gray-200 hover:bg-white/5 transition-colors">YTD</button>
+                <div class="w-px h-6 bg-white/10 mx-1"></div>
+                <button class="flex items-center px-3 py-1.5 text-sm font-medium rounded text-gray-400 hover:text-gold hover:bg-gold/10 transition-colors">
+                    <i data-lucide="calendar" class="w-4 h-4 mr-1.5"></i> Custom
+                </button>
+            </div>
+            
+            <button class="bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space font-bold px-5 py-2.5 rounded shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.5)] transition-all flex items-center text-sm uppercase tracking-widest">
+                <i data-lucide="file-bar-chart-2" class="w-4 h-4 mr-2 fill-space"></i> Generate Report
+            </button>
+        </div>
+    </div>
+
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="glass-panel rounded-lg p-5 border-l-2 border-gold">
+            <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Global Usable Yield</p>
+            <h4 class="font-orbitron text-3xl font-bold text-white">96.8%</h4>
+        </div>
+        <div class="glass-panel rounded-lg p-5 border-l-2 border-green-500">
+            <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Optimal Suppliers</p>
+            <h4 class="font-orbitron text-3xl font-bold text-green-400">12</h4>
+            <p class="text-[10px] text-gray-500 mt-1">> 95% Yield Maintained</p>
+        </div>
+        <div class="glass-panel rounded-lg p-5 border-l-2 border-red-500">
+            <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Critical Vendors</p>
+            <h4 class="font-orbitron text-3xl font-bold text-red-400">1</h4>
+            <p class="text-[10px] text-gray-500 mt-1">< 85% Yield Detected</p>
+        </div>
+
+    </section>
+
+    <section>
+        <div class="glass-panel rounded-lg overflow-hidden flex flex-col min-h-[500px]">
+            
+            <div class="p-4 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-space/40">
+                <div class="relative flex-1 max-w-sm">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                    <input type="text" placeholder="Search supplier or item..." class="w-full bg-space border border-white/10 text-sm text-white rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                </div>
+                <div class="flex items-center space-x-3">
+                    <select class="bg-space border border-white/10 text-xs text-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-gold/50 cursor-pointer w-48">
+                        <option value="all">Supplier: All</option>
+                        <option value="freshfarms">FreshFarms Local</option>
+                        <option value="snackco">SnackCo Distributors</option>
+                        <option value="beverage_inc">Beverage Inc.</option>
+                    </select>
+                    <select class="bg-space border border-white/10 text-xs text-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-gold/50 cursor-pointer w-48">
+                        <option value="all">Status: Show All</option>
+                        <option value="optimal">Optimal (>95%)</option>
+                        <option value="warning">Warning (85-95%)</option>
+                        <option value="critical">Critical Only (<85%)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="text-xs text-gray-500 uppercase tracking-wider bg-[#010204] border-b border-white/10">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold">Supplier Name</th>
+                            <th class="px-6 py-4 font-semibold">Item Supplied</th>
+                            <th class="px-6 py-4 font-semibold">Volume Received</th>
+                            <th class="px-6 py-4 font-semibold">Rejection / Waste</th>
+                            <th class="px-6 py-4 font-semibold text-center">Usable Yield %</th>
+                            <th class="px-6 py-4 font-semibold">Quality Status</th>
+                            <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        
+                        <tr class="hover:bg-white/[0.02] transition-colors group">
+                            <td class="px-6 py-4">
+                                <p class="text-gray-200 font-bold mb-0.5">SnackCo Distributors</p>
+                                <span class="text-[9px] text-gray-500 font-mono">ID: VEND-0012</span>
+                            </td>
+                            <td class="px-6 py-4 text-gray-300">Lays Classic Chips 50g</td>
+                            <td class="px-6 py-4 font-mono text-gray-400">500 units</td>
+                            <td class="px-6 py-4 font-mono text-gray-400">2 units</td>
+                            <td class="px-6 py-4 font-mono font-bold text-white text-center">99.6%</td>
+                            <td class="px-6 py-4">
+                                <span class="flex items-center text-green-400 text-xs bg-green-400/10 px-2 py-1 rounded border border-green-500/20 w-fit">
+                                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5 mr-1.5"></i> Optimal (>95%)
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded" title="View PO History">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+
+                        <tr class="hover:bg-white/[0.02] transition-colors group bg-yellow-500/[0.02]">
+                            <td class="px-6 py-4">
+                                <p class="text-gray-200 font-bold mb-0.5">Beverage Inc.</p>
+                                <span class="text-[9px] text-gray-500 font-mono">ID: VEND-0045</span>
+                            </td>
+                            <td class="px-6 py-4 text-gray-300">Fresh Lemons</td>
+                            <td class="px-6 py-4 font-mono text-gray-400">100 kg</td>
+                            <td class="px-6 py-4 font-mono text-gray-400">11 kg</td>
+                            <td class="px-6 py-4 font-mono font-bold text-yellow-500 text-center">89.0%</td>
+                            <td class="px-6 py-4">
+                                <span class="flex items-center text-yellow-500 text-xs bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20 w-fit">
+                                    <i data-lucide="alert-circle" class="w-3.5 h-3.5 mr-1.5"></i> Monitor (85-95%)
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded" title="View PO History">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+
+                        <tr class="hover:bg-white/[0.02] transition-colors group bg-red-500/[0.05]">
+                            <td class="px-6 py-4">
+                                <p class="text-gray-200 font-bold mb-0.5">FreshFarms Local</p>
+                                <span class="text-[9px] text-gray-500 font-mono">ID: VEND-0088</span>
+                            </td>
+                            <td class="px-6 py-4 text-gray-300">Fresh Strawberries</td>
+                            <td class="px-6 py-4 font-mono text-gray-400">20 kg</td>
+                            <td class="px-6 py-4 font-mono text-red-400 font-bold">4.5 kg</td>
+                            <td class="px-6 py-4 font-mono font-bold text-red-400 text-center">77.5%</td>
+                            <td class="px-6 py-4">
+                                <span class="flex items-center text-red-400 text-xs bg-red-400/10 px-2 py-1 rounded border border-red-500/20 w-fit shadow-[0_0_10px_rgba(239,68,68,0.1)]">
+                                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1.5"></i> Critical (<85%)
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded bg-space border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors" title="Contact Supplier / Issue Chargeback">
+                                    Review Vendor
+                                </button>
+                            </td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-4 border-t border-white/10 mt-auto bg-space/40 flex justify-between items-center text-xs text-gray-400 font-sans">
+                <p>Showing 3 of 18 received SKUs</p>
+                <div class="flex items-center space-x-1 font-sans">
+                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-50" disabled>Prev</button>
+                    <button class="px-3 py-1.5 rounded bg-gold/20 text-gold border border-gold/30">1</button>
+                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">2</button>
+                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">Next</button>
+                </div>
+            </div>
+            
+        </div>
+    </section>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
