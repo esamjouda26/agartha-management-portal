@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supplier Management | Merch & Retail</title>
+    <title>Supplier Database | Merch & Retail</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,23 +39,10 @@
 
     <style>
         /* Custom Webkit Scrollbars */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: rgba(212, 175, 55, 0.2);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(212, 175, 55, 0.5);
-        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(212, 175, 55, 0.5); }
 
         /* Glassmorphism utility */
         .glass-panel {
@@ -66,10 +53,12 @@
             transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .glass-panel:hover {
-            border-color: rgba(212, 175, 55, 0.3);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        }
+        .glass-panel:hover { border-color: rgba(212, 175, 55, 0.3); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); }
+
+        /* Toggle Switch Styling */
+        .toggle-checkbox:checked { right: 0; border-color: #22c55e; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #22c55e; }
+        .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); border-color: white; }
 
         /* Custom Select Styling */
         select {
@@ -80,25 +69,7 @@
             background-size: 1.5em 1.5em;
         }
 
-        /* Toggle Switch Styling */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #22c55e;
-        }
-
-        .toggle-checkbox:checked+.toggle-label {
-            background-color: #22c55e;
-        }
-
-        .toggle-checkbox:checked+.toggle-label:after {
-            transform: translateX(100%);
-            border-color: white;
-        }
-
-        body {
-            background-color: transparent;
-            color: #e2e8f0;
-        }
+        body { background-color: transparent; color: #e2e8f0; }
     </style>
 </head>
 
@@ -107,71 +78,40 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
-                <i data-lucide="truck" class="w-6 h-6 mr-3"></i> Supplier Management
+                <i data-lucide="building-2" class="w-6 h-6 mr-3"></i> Master Supplier Database
             </h3>
-            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Vendor Performance, Fill Rates & Lead Times
-            </p>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Vendor Records, Tax Details & Contact Routing</p>
         </div>
-
+        
         <div class="flex items-center space-x-4">
-            <button
-                class="bg-space border border-white/10 hover:bg-white/5 text-white font-medium px-4 py-2.5 rounded transition-all flex items-center text-sm">
-                <i data-lucide="bar-chart-2" class="w-4 h-4 mr-2"></i> Performance Report
+            <button class="bg-space border border-white/10 hover:bg-white/5 text-white font-medium px-4 py-2.5 rounded transition-all flex items-center text-sm">
+                <i data-lucide="download-cloud" class="w-4 h-4 mr-2"></i> Export Directory
             </button>
-            <button onclick="openModal()"
-                class="bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space font-bold px-5 py-2.5 rounded shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.5)] transition-all flex items-center text-sm uppercase tracking-widest">
+            <button onclick="openSupplierModal('add')" class="bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space font-bold px-5 py-2.5 rounded shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.5)] transition-all flex items-center text-sm uppercase tracking-widest">
                 <i data-lucide="plus" class="w-4 h-4 mr-2 fill-space"></i> Add Supplier
             </button>
         </div>
     </div>
 
-    <section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="glass-panel rounded-lg p-5 border-l-2 border-gold">
-            <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Active Suppliers</p>
-            <h4 class="font-orbitron text-3xl font-bold text-white">18</h4>
-        </div>
-        <div class="glass-panel rounded-lg p-5 border-l-2 border-green-500">
-            <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Avg Fill Rate</p>
-            <h4 class="font-orbitron text-3xl font-bold text-green-400">97.2%</h4>
-            <p class="text-[10px] text-gray-500 mt-1">Target: >95.0%</p>
-        </div>
-        <div class="glass-panel rounded-lg p-5 border-l-2 border-blue-500">
-            <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Avg Lead Time</p>
-            <h4 class="font-orbitron text-3xl font-bold text-white">12.5 <span
-                    class="text-sm text-gray-400 font-sans">Days</span></h4>
-        </div>
-        <div class="glass-panel rounded-lg p-5 border-l-2 border-yellow-500">
-            <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Under Review</p>
-            <h4 class="font-orbitron text-3xl font-bold text-yellow-500">2</h4>
-            <p class="text-[10px] text-gray-500 mt-1">Pending Quality Audit</p>
-        </div>
-    </section>
-
     <section>
-        <div class="glass-panel rounded-lg overflow-hidden flex flex-col min-h-[500px]">
-
-            <div
-                class="p-4 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-space/40">
-                <div class="relative flex-1 max-w-sm">
-                    <i data-lucide="search"
-                        class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"></i>
-                    <input type="text" placeholder="Search supplier name or ID..."
-                        class="w-full bg-space border border-white/10 text-sm text-white rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+        <div class="glass-panel rounded-lg overflow-hidden flex flex-col min-h-[600px]">
+            
+            <div class="p-4 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-space/40">
+                <div class="relative flex-1 max-w-md">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                    <input type="text" placeholder="Search Company, SSM, or Contact..." class="w-full bg-space border border-white/10 text-sm text-white rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
                 </div>
                 <div class="flex items-center space-x-3">
-                    <select
-                        class="bg-space border border-white/10 text-xs text-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-gold/50 cursor-pointer w-48">
-                        <option value="all">Category: All</option>
-                        <option value="apparel">Apparel & Textiles</option>
-                        <option value="souvenir">Souvenirs & Hardgoods</option>
-                        <option value="packaging">Packaging & Consumables</option>
+                    <select class="bg-space border border-white/10 text-xs text-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-gold/50 cursor-pointer w-40">
+                        <option value="all">Terms: All</option>
+                        <option value="net30">Net 30</option>
+                        <option value="cod">COD</option>
+                        <option value="prepaid">Pre-paid</option>
                     </select>
-                    <select
-                        class="bg-space border border-white/10 text-xs text-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-gold/50 cursor-pointer w-48">
+                    <select class="bg-space border border-white/10 text-xs text-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-gold/50 cursor-pointer w-40">
+                        <option value="active" selected>Status: Active</option>
+                        <option value="inactive">Status: Inactive</option>
                         <option value="all">Status: All</option>
-                        <option value="active" selected>Active</option>
-                        <option value="review">Under Review</option>
-                        <option value="inactive">Inactive</option>
                     </select>
                 </div>
             </div>
@@ -180,106 +120,106 @@
                 <table class="w-full text-left text-sm whitespace-nowrap">
                     <thead class="text-xs text-gray-500 uppercase tracking-wider bg-[#010204] border-b border-white/10">
                         <tr>
-                            <th class="px-6 py-4 font-semibold">Supplier Name & ID</th>
-                            <th class="px-6 py-4 font-semibold">Primary Category</th>
-                            <th class="px-6 py-4 font-semibold text-center">Avg Lead Time</th>
-                            <th class="px-6 py-4 font-semibold text-center">Fill Rate %</th>
-                            <th class="px-6 py-4 font-semibold text-right">YTD Spend</th>
-                            <th class="px-6 py-4 font-semibold">Status</th>
+                            <th class="px-6 py-4 font-semibold">Supplier ID</th>
+                            <th class="px-6 py-4 font-semibold">Company & SSM</th>
+                            <th class="px-6 py-4 font-semibold">Contact Person</th>
+                            <th class="px-6 py-4 font-semibold">Phone (WhatsApp)</th>
+                            <th class="px-6 py-4 font-semibold">Email (PO Routing)</th>
+                            <th class="px-6 py-4 font-semibold text-center">Payment Terms</th>
+                            <th class="px-6 py-4 font-semibold text-center">Status</th>
                             <th class="px-6 py-4 font-semibold text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-white/5">
-
+                        
                         <tr class="hover:bg-white/[0.02] transition-colors group">
+                            <td class="px-6 py-4 font-mono text-gold font-bold">SUP-012</td>
                             <td class="px-6 py-4">
-                                <p class="text-gray-200 font-bold font-sans mb-0.5">Agartha Apparel Co.</p>
-                                <span class="text-[9px] text-gray-500 font-mono">ID: SUP-APP-01</span>
+                                <p class="text-gray-200 font-bold font-sans mb-0.5">Mega Souvenirs Sdn Bhd</p>
+                                <span class="text-[10px] text-gray-500 font-mono tracking-widest">SSM: 1234567-T</span>
                             </td>
-                            <td class="px-6 py-4 text-gray-400 text-xs">Apparel & Textiles</td>
-                            <td class="px-6 py-4 font-mono text-gray-300 text-center">14 Days</td>
-                            <td class="px-6 py-4 font-mono font-bold text-green-400 text-center">98.5%</td>
-                            <td class="px-6 py-4 font-mono text-gray-300 text-right">RM 125,400.00</td>
-                            <td class="px-6 py-4">
-                                <span
-                                    class="flex items-center text-green-400 text-xs bg-green-400/10 px-2 py-1 rounded border border-green-500/20 w-fit">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></span> Active
-                                </span>
+                            <td class="px-6 py-4 text-gray-300 font-sans">Ahmad Faizal</td>
+                            <td class="px-6 py-4 font-mono text-gray-400">
+                                <a href="#" class="hover:text-green-400 flex items-center transition-colors">
+                                    +60 12-345 6789
+                                </a>
+                            </td>
+                            <td class="px-6 py-4 font-mono text-gray-400">
+                                <a href="mailto:orders@mega.com.my" class="hover:text-blue-400 transition-colors">orders@mega.com.my</a>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="bg-space px-2 py-1 rounded border border-white/10 text-xs font-mono text-gray-300">Net 30</span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="relative inline-block w-8 h-4 align-middle select-none">
+                                    <input type="checkbox" checked class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 border-space appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out"/>
+                                    <label class="toggle-label block overflow-hidden h-4 rounded-full bg-space border border-white/10 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                                </div>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded"
-                                    title="Edit Supplier"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded ml-1"
-                                    title="View POs"><i data-lucide="file-text" class="w-4 h-4"></i></button>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-white/[0.02] transition-colors group">
-                            <td class="px-6 py-4">
-                                <p class="text-gray-200 font-bold font-sans mb-0.5">Artisan Ceramics Ltd.</p>
-                                <span class="text-[9px] text-gray-500 font-mono">ID: SUP-HRD-04</span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-400 text-xs">Souvenirs & Hardgoods</td>
-                            <td class="px-6 py-4 font-mono text-gray-300 text-center">30 Days</td>
-                            <td class="px-6 py-4 font-mono text-white text-center">92.0%</td>
-                            <td class="px-6 py-4 font-mono text-gray-300 text-right">RM 45,200.00</td>
-                            <td class="px-6 py-4">
-                                <span
-                                    class="flex items-center text-green-400 text-xs bg-green-400/10 px-2 py-1 rounded border border-green-500/20 w-fit">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></span> Active
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded"
-                                    title="Edit Supplier"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded ml-1"
-                                    title="View POs"><i data-lucide="file-text" class="w-4 h-4"></i></button>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-white/[0.02] transition-colors group bg-yellow-500/[0.02]">
-                            <td class="px-6 py-4">
-                                <p class="text-gray-200 font-bold font-sans mb-0.5">Global Merch Imports</p>
-                                <span class="text-[9px] text-gray-500 font-mono">ID: SUP-MIX-12</span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-400 text-xs">Mixed Goods</td>
-                            <td class="px-6 py-4 font-mono text-yellow-500 text-center font-bold">45 Days</td>
-                            <td class="px-6 py-4 font-mono font-bold text-red-400 text-center">82.4%</td>
-                            <td class="px-6 py-4 font-mono text-gray-300 text-right">RM 85,000.00</td>
-                            <td class="px-6 py-4">
-                                <span
-                                    class="flex items-center text-yellow-500 text-xs bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/30 w-fit">
-                                    <i data-lucide="alert-circle" class="w-3 h-3 mr-1.5"></i> Under Review
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button
-                                    class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded border border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 transition-colors">
-                                    View Audit
+                                <button onclick="openSupplierModal('edit', 'SUP-012')" class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded border border-gray-500/30 text-gray-400 hover:bg-white/10 hover:text-white transition-colors">
+                                    Edit Details
                                 </button>
                             </td>
                         </tr>
 
                         <tr class="hover:bg-white/[0.02] transition-colors group">
+                            <td class="px-6 py-4 font-mono text-gold font-bold">SUP-045</td>
                             <td class="px-6 py-4">
-                                <p class="text-gray-200 font-bold font-sans mb-0.5">FastPrint Packaging</p>
-                                <span class="text-[9px] text-gray-500 font-mono">ID: SUP-PKG-02</span>
+                                <p class="text-gray-200 font-bold font-sans mb-0.5">Agartha Apparel Co.</p>
+                                <span class="text-[10px] text-gray-500 font-mono tracking-widest">SSM: 9876543-W</span>
                             </td>
-                            <td class="px-6 py-4 text-gray-400 text-xs">Packaging & Consumables</td>
-                            <td class="px-6 py-4 font-mono text-green-400 text-center font-bold">5 Days</td>
-                            <td class="px-6 py-4 font-mono text-white text-center">99.1%</td>
-                            <td class="px-6 py-4 font-mono text-gray-300 text-right">RM 12,050.00</td>
-                            <td class="px-6 py-4">
-                                <span
-                                    class="flex items-center text-green-400 text-xs bg-green-400/10 px-2 py-1 rounded border border-green-500/20 w-fit">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5"></span> Active
-                                </span>
+                            <td class="px-6 py-4 text-gray-300 font-sans">Sarah Lee</td>
+                            <td class="px-6 py-4 font-mono text-gray-400">
+                                <a href="#" class="hover:text-green-400 flex items-center transition-colors">
+                                    +60 19-876 5432
+                                </a>
+                            </td>
+                            <td class="px-6 py-4 font-mono text-gray-400">
+                                <a href="mailto:sales@agarthaapparel.com" class="hover:text-blue-400 transition-colors">sales@agarthaapparel.com</a>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="bg-space px-2 py-1 rounded border border-white/10 text-xs font-mono text-gray-300">Net 15</span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="relative inline-block w-8 h-4 align-middle select-none">
+                                    <input type="checkbox" checked class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 border-space appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out"/>
+                                    <label class="toggle-label block overflow-hidden h-4 rounded-full bg-space border border-white/10 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                                </div>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded"
-                                    title="Edit Supplier"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded ml-1"
-                                    title="View POs"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                                <button onclick="openSupplierModal('edit', 'SUP-045')" class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded border border-gray-500/30 text-gray-400 hover:bg-white/10 hover:text-white transition-colors">
+                                    Edit Details
+                                </button>
+                            </td>
+                        </tr>
+
+                        <tr class="hover:bg-white/[0.02] transition-colors group opacity-60">
+                            <td class="px-6 py-4 font-mono text-gray-500 font-bold">SUP-008</td>
+                            <td class="px-6 py-4">
+                                <p class="text-gray-400 font-bold font-sans mb-0.5">FastPrint Packaging</p>
+                                <span class="text-[10px] text-gray-600 font-mono tracking-widest">SSM: 4567891-P</span>
+                            </td>
+                            <td class="px-6 py-4 text-gray-500 font-sans">Jason Chong</td>
+                            <td class="px-6 py-4 font-mono text-gray-500">
+                                +60 11-223 3445
+                            </td>
+                            <td class="px-6 py-4 font-mono text-gray-500">
+                                jason@fastprint.com
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="bg-space px-2 py-1 rounded border border-white/5 text-xs font-mono text-gray-500">COD</span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="relative inline-block w-8 h-4 align-middle select-none">
+                                    <input type="checkbox" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-gray-500 border-4 border-space appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out"/>
+                                    <label class="toggle-label block overflow-hidden h-4 rounded-full bg-space border border-white/10 cursor-pointer transition-colors duration-200 ease-in-out"></label>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button onclick="openSupplierModal('edit', 'SUP-008')" class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded border border-gray-500/30 text-gray-500 hover:bg-white/10 hover:text-white transition-colors">
+                                    Edit Details
+                                </button>
                             </td>
                         </tr>
 
@@ -287,120 +227,113 @@
                 </table>
             </div>
 
-            <div
-                class="p-4 border-t border-white/10 mt-auto bg-space/40 flex justify-between items-center text-xs text-gray-400 font-sans">
-                <p>Showing 4 of 18 active suppliers</p>
+            <div class="p-4 border-t border-white/10 mt-auto bg-space/40 flex justify-between items-center text-xs text-gray-400 font-sans">
+                <p>Showing 3 of 42 registered vendors</p>
                 <div class="flex items-center space-x-1 font-sans">
-                    <button
-                        class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-50"
-                        disabled>Prev</button>
+                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-50" disabled>Prev</button>
                     <button class="px-3 py-1.5 rounded bg-gold/20 text-gold border border-gold/30">1</button>
-                    <button
-                        class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">2</button>
-                    <button
-                        class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">Next</button>
+                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">2</button>
+                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">3</button>
+                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">Next</button>
                 </div>
             </div>
-
+            
         </div>
     </section>
 
-    <div id="add-supplier-modal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-space/80 backdrop-blur-sm hidden overflow-y-auto pt-20 pb-10">
-        <div
-            class="glass-panel rounded-lg w-full max-w-2xl border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] flex flex-col my-auto relative">
-
+    <div id="supplier-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-space/80 backdrop-blur-sm hidden overflow-y-auto pt-20 pb-10">
+        <div class="glass-panel rounded-lg w-full max-w-3xl border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] flex flex-col my-auto relative">
+            
             <div class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg">
-                <h3 class="font-cinzel text-lg text-gold flex items-center tracking-wider">
-                    <i data-lucide="user-plus" class="w-5 h-5 mr-2"></i> Register New Supplier
+                <h3 class="font-cinzel text-lg text-gold flex items-center tracking-wider" id="modal-title">
+                    <i data-lucide="building" class="w-5 h-5 mr-2"></i> Register New Supplier
                 </h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition-colors">
+                <button onclick="closeSupplierModal()" class="text-gray-400 hover:text-white transition-colors">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
             <div class="p-6 space-y-6">
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="space-y-2 col-span-2 md:col-span-1">
-                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Supplier
-                            Name</label>
-                        <input type="text" placeholder="e.g. Acme Merch Co."
-                            class="w-full bg-space border border-white/10 text-sm text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                
+                <div class="space-y-4">
+                    <h4 class="text-sm font-bold text-white border-b border-white/10 pb-2">Company Information</h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Company Name <span class="text-red-400">*</span></label>
+                            <input type="text" id="comp-name" placeholder="e.g. Acme Merch Co." class="w-full bg-space border border-white/10 text-sm text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">SSM Number <span class="text-red-400">*</span></label>
+                                <input type="text" id="comp-ssm" placeholder="1234567-T" class="w-full bg-space border border-white/10 font-mono text-sm text-white rounded-md px-3 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">SST Number <span class="text-gray-600">(Opt)</span></label>
+                                <input type="text" id="comp-sst" placeholder="W10-XXXX" class="w-full bg-space border border-white/10 font-mono text-sm text-white rounded-md px-3 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                            </div>
+                        </div>
                     </div>
-                    <div class="space-y-2 col-span-2 md:col-span-1">
-                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Primary
-                            Category</label>
-                        <select
-                            class="w-full bg-space border border-white/10 text-sm text-gray-300 rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 cursor-pointer">
-                            <option value="apparel">Apparel & Textiles</option>
-                            <option value="souvenir">Souvenirs & Hardgoods</option>
-                            <option value="packaging">Packaging & Consumables</option>
-                            <option value="mixed">Mixed Goods</option>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Physical / Billing Address</label>
+                        <textarea id="comp-address" rows="2" placeholder="Full registered business address..." class="w-full bg-space border border-white/10 text-sm text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all resize-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h4 class="text-sm font-bold text-white border-b border-white/10 pb-2">Contact & Routing Setup</h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Contact Person</label>
+                            <input type="text" id="cont-name" placeholder="Sales Rep Name" class="w-full bg-space border border-white/10 text-sm text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold flex justify-between">
+                                Phone Number <i data-lucide="message-circle" class="w-3 h-3 text-green-400" title="Used for WhatsApp routing"></i>
+                            </label>
+                            <input type="tel" id="cont-phone" placeholder="+60 1X-XXX XXXX" class="w-full bg-space border border-white/10 font-mono text-sm text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold flex justify-between">
+                                Email Address <i data-lucide="mail" class="w-3 h-3 text-blue-400" title="Used for Automated PO emails"></i>
+                            </label>
+                            <input type="email" id="cont-email" placeholder="orders@vendor.com" class="w-full bg-space border border-white/10 font-mono text-sm text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-gold/5 to-transparent p-4 rounded border border-gold/20 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-bold text-gold tracking-wide flex items-center"><i data-lucide="credit-card" class="w-4 h-4 mr-2"></i> Financial Terms</p>
+                        <p class="text-[10px] text-gray-500 mt-1">Default payment agreement for all POs generated.</p>
+                    </div>
+                    <div class="w-48">
+                        <label class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold block mb-1">Payment Terms</label>
+                        <select id="comp-terms" class="w-full bg-space border border-white/10 text-sm text-gray-300 rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 cursor-pointer">
+                            <option value="net15">Net 15</option>
+                            <option value="net30" selected>Net 30</option>
+                            <option value="net60">Net 60</option>
+                            <option value="cod">COD (Cash on Delivery)</option>
+                            <option value="prepaid">Pre-paid</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="space-y-2">
-                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Contact
-                            Email</label>
-                        <input type="email" placeholder="orders@acme.com"
-                            class="w-full bg-space border border-white/10 text-sm text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Contact
-                            Phone</label>
-                        <input type="tel" placeholder="+60 12-345 6789"
-                            class="w-full bg-space border border-white/10 text-sm text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
-                    </div>
-                </div>
-
-                <div class="bg-gradient-to-r from-gold/5 to-transparent p-5 rounded border border-gold/20">
-                    <p class="text-sm font-bold text-gold tracking-wide flex items-center mb-4"><i
-                            data-lucide="file-check-2" class="w-4 h-4 mr-2"></i> Terms & Logistics Config</p>
-                    <div class="grid grid-cols-2 gap-6 items-end">
-                        <div class="space-y-2">
-                            <label class="text-[10px] text-gray-400 uppercase tracking-widest">Expected Lead Time
-                                (Days)</label>
-                            <input type="number" placeholder="14"
-                                class="w-full bg-space border border-white/10 text-sm font-mono text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-[10px] text-gray-400 uppercase tracking-widest">Payment Terms</label>
-                            <select
-                                class="w-full bg-space border border-white/10 text-sm text-gray-300 rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 cursor-pointer">
-                                <option value="net30">Net 30</option>
-                                <option value="net60">Net 60</option>
-                                <option value="cod">Cash on Delivery</option>
-                                <option value="prepaid">Prepaid</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div class="p-5 border-t border-white/10 bg-space/80 rounded-b-lg flex items-center justify-between">
-
-                <div class="flex items-center space-x-4 bg-[#010204] px-4 py-2 rounded border border-white/5">
-                    <div
-                        class="relative inline-block w-10 h-5 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="supplier_status_toggle" id="supplier_status_toggle"
-                            class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-space appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out"
-                            checked />
-                        <label for="supplier_status_toggle"
-                            class="toggle-label block overflow-hidden h-5 rounded-full bg-space border border-white/10 cursor-pointer transition-colors duration-200 ease-in-out"></label>
-                    </div>
-                    <div>
-                        <p class="text-sm font-bold text-green-400 tracking-wide" id="status-text">Active Vendor</p>
-                    </div>
+                
+                <div class="flex items-center text-[10px] text-gray-500 font-mono">
+                    <i data-lucide="shield-alert" class="w-4 h-4 mr-2 text-yellow-500"></i>
+                    Suppliers cannot be deleted to preserve PO history. Use the main table to toggle Active status.
                 </div>
 
                 <div class="flex space-x-3">
-                    <button onclick="closeModal()"
-                        class="px-4 py-2 text-sm font-medium rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
-                    <button
-                        class="px-6 py-2 text-sm font-bold rounded bg-gold/20 text-gold border border-gold/50 hover:bg-gold hover:text-space transition-all shadow-[0_0_10px_rgba(212,175,55,0.2)]">
-                        Save Supplier
+                    <button onclick="closeSupplierModal()" class="px-4 py-2 text-sm font-medium rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
+                    <button class="px-6 py-2 text-sm font-bold rounded bg-gold/20 text-gold border border-gold/50 hover:bg-gold hover:text-space transition-all shadow-[0_0_10px_rgba(212,175,55,0.2)]">
+                        Save Supplier Data
                     </button>
                 </div>
             </div>
@@ -412,30 +345,47 @@
         lucide.createIcons();
 
         // Modal Logic
-        const modal = document.getElementById('add-supplier-modal');
-        function openModal() {
+        const modal = document.getElementById('supplier-modal');
+        const modalTitle = document.getElementById('modal-title');
+        
+        // Form Fields
+        const fName = document.getElementById('comp-name');
+        const fSSM = document.getElementById('comp-ssm');
+        const fSST = document.getElementById('comp-sst');
+        const fContact = document.getElementById('cont-name');
+        const fPhone = document.getElementById('cont-phone');
+        const fEmail = document.getElementById('cont-email');
+        const fTerms = document.getElementById('comp-terms');
+
+        function openSupplierModal(mode, id = null) {
+            if (mode === 'edit' && id === 'SUP-012') {
+                // Populate fake data for Edit Flow demo
+                modalTitle.innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 mr-2"></i> Update Supplier: ${id}`;
+                fName.value = "Mega Souvenirs Sdn Bhd";
+                fSSM.value = "1234567-T";
+                fSST.value = "W10-2204-320011";
+                fContact.value = "Ahmad Faizal";
+                fPhone.value = "+60 12-345 6789";
+                fEmail.value = "orders@mega.com.my";
+                fTerms.value = "net30";
+            } else {
+                // Clear form for Add Flow
+                modalTitle.innerHTML = `<i data-lucide="building" class="w-5 h-5 mr-2"></i> Register New Supplier`;
+                fName.value = "";
+                fSSM.value = "";
+                fSST.value = "";
+                fContact.value = "";
+                fPhone.value = "";
+                fEmail.value = "";
+                fTerms.value = "net30";
+            }
+            lucide.createIcons();
             modal.classList.remove('hidden');
         }
-        function closeModal() {
+
+        function closeSupplierModal() {
             modal.classList.add('hidden');
         }
-
-        // Toggle Status Label Logic
-        const statusToggle = document.getElementById('supplier_status_toggle');
-        const statusText = document.getElementById('status-text');
-
-        statusToggle.addEventListener('change', function () {
-            if (this.checked) {
-                statusText.textContent = "Active Vendor";
-                statusText.classList.remove('text-gray-400');
-                statusText.classList.add('text-green-400');
-            } else {
-                statusText.textContent = "Inactive";
-                statusText.classList.remove('text-green-400');
-                statusText.classList.add('text-gray-400');
-            }
-        });
     </script>
 </body>
-
 </html>
