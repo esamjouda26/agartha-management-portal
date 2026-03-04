@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Stock Policies</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Orbitron:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        space: '#020408',
+                        panel: 'rgba(10, 20, 30, 0.7)',
+                        gold: '#d4af37',
+                        bronze: '#806b45',
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        inter: ['Inter', 'sans-serif'],
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.5);
+        }
+
+        .glass-panel {
+            background-color: rgba(10, 20, 30, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d4af37' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+        }
+
+        body {
+            background-color: transparent;
+            color: #e2e8f0;
+        }
+
+        .inline-input {
+            background-color: transparent;
+            border: 1px solid transparent;
+            padding: 4px 8px;
+            border-radius: 4px;
+            width: 70px;
+            text-align: center;
+            transition: all 0.2s ease;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            color: #e2e8f0;
+        }
+
+        .inline-input:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            background-color: rgba(2, 4, 8, 0.5);
+        }
+
+        .inline-input:focus {
+            border-color: rgba(212, 175, 55, 0.5);
+            background-color: #020408;
+            outline: none;
+            color: #d4af37;
+        }
+
+        .inline-input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body class="font-inter p-6 space-y-8 h-screen overflow-y-auto pb-24 relative">
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
+                <i data-lucide="layers" class="w-6 h-6 mr-3"></i> Global Stock Policies
+            </h3>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Master Configuration for Physical Capacity
+                Ceilings</p>
+        </div>
+        <button onclick="openBulkModal()"
+            class="bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space font-bold px-5 py-2.5 rounded shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.5)] transition-all flex items-center text-sm uppercase tracking-widest">
+            <i data-lucide="copy-check" class="w-4 h-4 mr-2 fill-space"></i> Bulk Policy Update
+        </button>
+    </div>
+
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="glass-panel rounded-lg p-4 border-l-2 border-blue-500/50">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <i data-lucide="boxes" class="w-4 h-4 text-blue-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Tracked SKUs</p>
+                    <p class="text-xl font-orbitron text-white font-bold" id="kpi-total">0</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-panel rounded-lg p-4 border-l-2 border-green-500/50">
+            <div class="flex items-center space-x-3">
+                <div
+                    class="w-9 h-9 rounded bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Fully Configured</p>
+                    <p class="text-xl font-orbitron text-green-400 font-bold" id="kpi-configured">0</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-panel rounded-lg p-4 border-l-2 border-yellow-500/50">
+            <div class="flex items-center space-x-3">
+                <div
+                    class="w-9 h-9 rounded bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-yellow-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Missing Policies</p>
+                    <p class="text-xl font-orbitron text-yellow-400 font-bold" id="kpi-missing">0</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-panel rounded-lg p-4 border-l-2 border-gold/50">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded bg-gold/10 border border-gold/20 flex items-center justify-center">
+                    <i data-lucide="database" class="w-4 h-4 text-gold"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Total Global Max</p>
+                    <p class="text-xl font-orbitron text-gold font-bold" id="kpi-global-capacity">0</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="glass-panel rounded-lg overflow-hidden flex flex-col min-h-[500px]">
+
+            <div
+                class="p-4 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-space/40">
+                <div class="relative flex-1 max-w-md">
+                    <i data-lucide="search"
+                        class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+                    <input id="search-input" type="text" placeholder="Search by name, SKU, or Barcode..."
+                        class="w-full bg-space border border-white/10 text-sm text-white rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-gold/50 transition-all"
+                        oninput="renderTable()">
+                </div>
+                <div class="flex items-center space-x-3">
+                    <select id="filter-type" onchange="renderTable()"
+                        class="bg-space border border-white/10 text-xs text-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-gold/50 cursor-pointer">
+                        <option value="all">Type: All Items</option>
+                        <option value="Prepackaged">Prepackaged Retail</option>
+                        <option value="Raw Ingredient">Raw Ingredient</option>
+                        <option value="Consumable">Consumable</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto flex-1">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="text-xs text-gray-500 uppercase tracking-wider bg-[#010204] border-b border-white/10">
+                        <tr>
+                            <th class="px-4 py-4 font-semibold">Product Name</th>
+                            <th class="px-4 py-4 font-semibold">SKU / Barcode</th>
+                            <th class="px-4 py-4 font-semibold">Item Type</th>
+                            <th class="px-4 py-4 font-semibold">UOM</th>
+                            <th class="px-4 py-4 font-semibold text-center border-l border-white/5">Max WH</th>
+                            <th class="px-4 py-4 font-semibold text-center">Max Café</th>
+                            <th class="px-4 py-4 font-semibold text-center">Max Vending</th>
+                            <th class="px-4 py-4 font-semibold text-center">Max Giftshop</th>
+                            <th class="px-4 py-4 font-semibold text-right">Ledger</th>
+                        </tr>
+                    </thead>
+                    <tbody id="policy-table-body" class="divide-y divide-white/5 font-mono text-xs">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <div id="ledger-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-space/80 backdrop-blur-sm hidden overflow-y-auto pt-10 pb-10">
+        <div
+            class="glass-panel rounded-lg w-full max-w-4xl border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] flex flex-col my-auto relative">
+            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg">
+                <div>
+                    <h3 id="ledger-title" class="font-cinzel text-lg text-gold flex items-center tracking-wider">
+                        <i data-lucide="history" class="w-5 h-5 mr-2"></i> Item Ledger
+                    </h3>
+                    <p id="ledger-subtitle" class="text-xs text-gray-400 mt-1 uppercase tracking-widest"></p>
+                </div>
+                <button onclick="closeLedgerModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6">
+                <div class="border border-white/5 rounded overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-xs text-gray-500 uppercase tracking-wider bg-[#010204]">
+                            <tr>
+                                <th class="px-5 py-3 font-semibold">Timestamp</th>
+                                <th class="px-5 py-3 font-semibold text-center">+/-</th>
+                                <th class="px-5 py-3 font-semibold">Transaction Type</th>
+                                <th class="px-5 py-3 font-semibold">Source &rarr; Destination</th>
+                                <th class="px-5 py-3 font-semibold">Runner / User</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledger-table-body" class="divide-y divide-white/5 font-mono text-xs">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="p-5 border-t border-white/10 bg-space/80 rounded-b-lg flex justify-end">
+                <button onclick="closeLedgerModal()"
+                    class="px-6 py-2 text-sm font-medium rounded bg-white/5 text-gray-300 hover:bg-white/10 transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="bulk-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-space/80 backdrop-blur-sm hidden overflow-y-auto pt-10 pb-10">
+        <div
+            class="glass-panel rounded-lg w-full max-w-lg border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] flex flex-col my-auto relative">
+            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg">
+                <h3 class="font-cinzel text-lg text-gold flex items-center tracking-wider">
+                    <i data-lucide="copy-check" class="w-5 h-5 mr-2"></i> Bulk Policy Update
+                </h3>
+                <button onclick="closeBulkModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-5">
+                <div class="bg-blue-500/10 border border-blue-500/20 p-3 rounded flex items-start space-x-3">
+                    <i data-lucide="info" class="w-4 h-4 text-blue-400 mt-0.5"></i>
+                    <p class="text-xs text-blue-300 font-sans">This will apply the specified max capacity limits to
+                        <strong>all items currently matching your active search/filter</strong>. Leave a field blank to
+                        skip updating it.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Max Warehouse
+                            Qty</label>
+                        <input id="bulk-wh" type="number" placeholder="No Change"
+                            class="w-full bg-space border border-white/10 text-sm font-mono text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Max Café
+                            Qty</label>
+                        <input id="bulk-cafe" type="number" placeholder="No Change"
+                            class="w-full bg-space border border-white/10 text-sm font-mono text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Max Vending
+                            Qty</label>
+                        <input id="bulk-vend" type="number" placeholder="No Change"
+                            class="w-full bg-space border border-white/10 text-sm font-mono text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Max Giftshop
+                            Qty</label>
+                        <input id="bulk-gift" type="number" placeholder="No Change"
+                            class="w-full bg-space border border-white/10 text-sm font-mono text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                    </div>
+                </div>
+            </div>
+            <div class="p-5 border-t border-white/10 bg-space/80 rounded-b-lg flex justify-end space-x-3">
+                <button onclick="closeBulkModal()"
+                    class="px-4 py-2 text-sm font-medium rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
+                <button onclick="applyBulkUpdate()"
+                    class="px-6 py-2 text-sm font-bold rounded bg-gold/20 text-gold border border-gold/50 hover:bg-gold hover:text-space transition-all shadow-[0_0_10px_rgba(212,175,55,0.2)]">Apply
+                    Bulk Update</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast"
+        class="fixed bottom-8 right-8 bg-green-500/20 border border-green-500/40 text-green-400 px-6 py-3 rounded-lg shadow-lg backdrop-blur-sm text-sm font-semibold flex items-center space-x-2 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-50">
+        <i data-lucide="check-circle" class="w-5 h-5"></i>
+        <span id="toast-msg">Policies updated successfully.</span>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ── Catalog Data (Auto-loaded from Merch) ──
+        let stockPolicies = [
+            { id: 'PRD-1045', name: 'Mineral Water 500ml', sku: '9556001234567', type: 'Prepackaged', uom: 'Piece', maxWh: 500, maxCafe: 100, maxVend: 50, maxGift: 20 },
+            { id: 'PRD-1046', name: 'Craft Cola 330ml', sku: '9556001234890', type: 'Prepackaged', uom: 'Piece', maxWh: 300, maxCafe: 80, maxVend: 40, maxGift: 0 },
+            { id: 'PRD-1047', name: 'Artisan Chips 50g', sku: '9556007775432', type: 'Prepackaged', uom: 'Piece', maxWh: 200, maxCafe: 60, maxVend: 30, maxGift: 30 },
+            { id: 'PRD-1048', name: 'Organic Granola Bar', sku: '9556003339012', type: 'Prepackaged', uom: 'Piece', maxWh: 150, maxCafe: 50, maxVend: 25, maxGift: 25 },
+            { id: 'PRD-1049', name: 'Raw Beef Tenderloin', sku: null, type: 'Raw Ingredient', uom: 'Kg', maxWh: 50, maxCafe: 15, maxVend: null, maxGift: null },
+            { id: 'PRD-1050', name: 'Fresh Atlantic Salmon', sku: null, type: 'Raw Ingredient', uom: 'Kg', maxWh: 30, maxCafe: 10, maxVend: null, maxGift: null },
+            { id: 'PRD-1051', name: 'Branded Paper Napkins', sku: '9556009998765', type: 'Consumable', uom: 'Pack', maxWh: 1000, maxCafe: 200, maxVend: 0, maxGift: 50 },
+            { id: 'PRD-1053', name: 'Cold Brew Coffee 250ml', sku: '9556002224561', type: 'Prepackaged', uom: 'Piece', maxWh: null, maxCafe: null, maxVend: null, maxGift: null }, // Simulating a newly added item with missing policies
+        ];
+
+        // ── Utility Functions ──
+        function typeBadge(type) {
+            switch (type) {
+                case 'Prepackaged': return `<span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] border border-blue-500/20 font-sans">${type}</span>`;
+                case 'Raw Ingredient': return `<span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[10px] border border-amber-500/20 font-sans">${type}</span>`;
+                case 'Consumable': return `<span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px] border border-purple-500/20 font-sans">${type}</span>`;
+                default: return `<span class="text-gray-400 font-sans">${type}</span>`;
+            }
+        }
+
+        // ── Render Main Table ──
+        function renderTable() {
+            const tbody = document.getElementById('policy-table-body');
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const typeFilter = document.getElementById('filter-type').value;
+
+            let filtered = stockPolicies.filter(p => {
+                const matchSearch = p.name.toLowerCase().includes(searchVal) || (p.sku && p.sku.includes(searchVal));
+                const matchType = typeFilter === 'all' || p.type === typeFilter;
+                return matchSearch && matchType;
+            });
+
+            tbody.innerHTML = '';
+
+            filtered.forEach(p => {
+                const idx = stockPolicies.indexOf(p);
+                const isNAGift = p.type === 'Raw Ingredient'; // Example rule: raw ingredients don't go to giftshop/vending
+                const isNAVend = p.type === 'Raw Ingredient' || p.type === 'Consumable';
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-white/[0.02] transition-colors group';
+
+                row.innerHTML = `
+                    <td class="px-4 py-4">
+                        <p class="text-gray-200 font-bold font-sans tracking-wide">${p.name}</p>
+                        <p class="text-[10px] text-gray-500 font-mono mt-0.5">${p.id}</p>
+                    </td>
+                    <td class="px-4 py-4 text-gray-400">${p.sku ? p.sku : '<span class="italic text-gray-600">N/A</span>'}</td>
+                    <td class="px-4 py-4">${typeBadge(p.type)}</td>
+                    <td class="px-4 py-4 text-gray-400 font-sans">${p.uom}</td>
+                    
+                    <td class="px-4 py-4 text-center border-l border-white/5">
+                        <input type="number" class="inline-input" value="${p.maxWh !== null ? p.maxWh : ''}" placeholder="-" onchange="updatePolicy(${idx}, 'maxWh', this.value)">
+                    </td>
+                    <td class="px-4 py-4 text-center">
+                        <input type="number" class="inline-input" value="${p.maxCafe !== null ? p.maxCafe : ''}" placeholder="-" onchange="updatePolicy(${idx}, 'maxCafe', this.value)">
+                    </td>
+                    <td class="px-4 py-4 text-center">
+                        ${isNAVend ? '<span class="text-gray-600 text-xs italic">N/A</span>' : `<input type="number" class="inline-input" value="${p.maxVend !== null ? p.maxVend : ''}" placeholder="-" onchange="updatePolicy(${idx}, 'maxVend', this.value)">`}
+                    </td>
+                    <td class="px-4 py-4 text-center">
+                        ${isNAGift ? '<span class="text-gray-600 text-xs italic">N/A</span>' : `<input type="number" class="inline-input" value="${p.maxGift !== null ? p.maxGift : ''}" placeholder="-" onchange="updatePolicy(${idx}, 'maxGift', this.value)">`}
+                    </td>
+                    
+                    <td class="px-4 py-4 text-right">
+                        <button onclick="openLedgerModal(${idx})" class="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded transition-colors" title="View Item Ledger">
+                            <i data-lucide="history" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            lucide.createIcons();
+            updateKPIs();
+        }
+
+        // ── KPIs & Update Logic ──
+        function updateKPIs() {
+            let configured = 0;
+            let missing = 0;
+            let globalMax = 0;
+
+            stockPolicies.forEach(p => {
+                // Determine if configured based on having at least one valid policy
+                if (p.maxWh !== null || p.maxCafe !== null || p.maxVend !== null || p.maxGift !== null) {
+                    configured++;
+                } else {
+                    missing++;
+                }
+
+                globalMax += (p.maxWh || 0) + (p.maxCafe || 0) + (p.maxVend || 0) + (p.maxGift || 0);
+            });
+
+            document.getElementById('kpi-total').textContent = stockPolicies.length;
+            document.getElementById('kpi-configured').textContent = configured;
+            document.getElementById('kpi-missing').textContent = missing;
+            document.getElementById('kpi-global-capacity').textContent = globalMax.toLocaleString();
+        }
+
+        function updatePolicy(idx, field, value) {
+            stockPolicies[idx][field] = value === '' ? null : parseInt(value, 10);
+            updateKPIs();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none'), 3500);
+        }
+
+        // ── Bulk Modal Logic ──
+        function openBulkModal() {
+            document.getElementById('bulk-wh').value = '';
+            document.getElementById('bulk-cafe').value = '';
+            document.getElementById('bulk-vend').value = '';
+            document.getElementById('bulk-gift').value = '';
+            document.getElementById('bulk-modal').classList.remove('hidden');
+        }
+
+        function closeBulkModal() {
+            document.getElementById('bulk-modal').classList.add('hidden');
+        }
+
+        function applyBulkUpdate() {
+            const wh = document.getElementById('bulk-wh').value;
+            const cafe = document.getElementById('bulk-cafe').value;
+            const vend = document.getElementById('bulk-vend').value;
+            const gift = document.getElementById('bulk-gift').value;
+
+            // Get currently filtered items to only apply to what the user sees
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const typeFilter = document.getElementById('filter-type').value;
+
+            let updateCount = 0;
+            stockPolicies.forEach(p => {
+                const matchSearch = p.name.toLowerCase().includes(searchVal) || (p.sku && p.sku.includes(searchVal));
+                const matchType = typeFilter === 'all' || p.type === typeFilter;
+
+                if (matchSearch && matchType) {
+                    if (wh !== '') p.maxWh = parseInt(wh, 10);
+                    if (cafe !== '') p.maxCafe = parseInt(cafe, 10);
+
+                    // Don't force vending/gift policies on Raw Ingredients
+                    if (p.type !== 'Raw Ingredient') {
+                        if (vend !== '' && p.type !== 'Consumable') p.maxVend = parseInt(vend, 10);
+                        if (gift !== '') p.maxGift = parseInt(gift, 10);
+                    }
+                    updateCount++;
+                }
+            });
+
+            closeBulkModal();
+            renderTable();
+            showToast(`Bulk update applied to ${updateCount} items.`);
+        }
+
+        // ── Ledger Modal Logic ──
+        function openLedgerModal(idx) {
+            const item = stockPolicies[idx];
+            document.getElementById('ledger-title').innerHTML = `<i data-lucide="history" class="w-5 h-5 mr-2"></i> Ledger: ${item.name}`;
+            document.getElementById('ledger-subtitle').textContent = `Tracking UOM: ${item.uom} | ID: ${item.id}`;
+
+            // Mock transaction generator for the selected item
+            const tbody = document.getElementById('ledger-table-body');
+            tbody.innerHTML = '';
+
+            // Generate some random history that makes sense
+            const types = [
+                { type: 'PO Receipt', sign: '+', color: 'text-green-400', dest: 'Warehouse', src: 'External Supplier' },
+                { type: 'Internal Transfer', sign: '-', color: 'text-yellow-400', src: 'Warehouse', dest: 'Café' },
+                { type: 'Issue-to-Consume', sign: '-', color: 'text-blue-400', src: 'Warehouse', dest: 'Cleaning Crew' },
+                { type: 'Reconciliation', sign: '-', color: 'text-red-400', src: 'Café', dest: 'Spoilage / Waste' }
+            ];
+
+            // Always start with a receipt
+            let qty = 120;
+            let html = `
+                <tr class="hover:bg-white/[0.02]">
+                    <td class="px-5 py-3 text-gray-400">2026-03-01 08:30 AM</td>
+                    <td class="px-5 py-3 text-center font-bold text-green-400">+150</td>
+                    <td class="px-5 py-3 text-gray-300">PO Receipt</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">External Supplier &rarr; Warehouse</td>
+                    <td class="px-5 py-3 text-gray-500">Runner: Ali K.</td>
+                </tr>
+                <tr class="hover:bg-white/[0.02]">
+                    <td class="px-5 py-3 text-gray-400">2026-03-02 14:15 PM</td>
+                    <td class="px-5 py-3 text-center font-bold text-yellow-400">-30</td>
+                    <td class="px-5 py-3 text-gray-300">Internal Transfer</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">Warehouse &rarr; Café</td>
+                    <td class="px-5 py-3 text-gray-500">Runner: Siti N.</td>
+                </tr>
+            `;
+
+            if (item.type === 'Consumable') {
+                html += `
+                <tr class="hover:bg-white/[0.02]">
+                    <td class="px-5 py-3 text-gray-400">2026-03-03 09:00 AM</td>
+                    <td class="px-5 py-3 text-center font-bold text-blue-400">-5</td>
+                    <td class="px-5 py-3 text-gray-300">Issue-to-Consume</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">Warehouse &rarr; Health Crew</td>
+                    <td class="px-5 py-3 text-gray-500">Inventory Mgr</td>
+                </tr>`;
+            } else {
+                html += `
+                <tr class="hover:bg-white/[0.02]">
+                    <td class="px-5 py-3 text-gray-400">2026-03-03 18:45 PM</td>
+                    <td class="px-5 py-3 text-center font-bold text-red-400">-2</td>
+                    <td class="px-5 py-3 text-gray-300">Reconciliation Write-off</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">Café &rarr; Spoilage</td>
+                    <td class="px-5 py-3 text-gray-500">Inventory Mgr</td>
+                </tr>`;
+            }
+
+            tbody.innerHTML = html;
+
+            document.getElementById('ledger-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeLedgerModal() {
+            document.getElementById('ledger-modal').classList.add('hidden');
+        }
+
+        // ── Initialization ──
+        renderTable();
+
+    </script>
+</body>
+
+</html>
