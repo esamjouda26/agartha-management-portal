@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reorder Points | Merch & Retail</title>
+    <title>Supplier POs</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,13 +38,24 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* Custom Webkit Scrollbars */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.2); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(212, 175, 55, 0.5); }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
 
-        /* Glassmorphism utility */
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.5);
+        }
+
         .glass-panel {
             background-color: rgba(10, 20, 30, 0.6);
             backdrop-filter: blur(12px);
@@ -53,333 +64,471 @@
             transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        /* Toggle Switch Styling */
-        .toggle-checkbox:checked { right: 0; border-color: #d4af37; }
-        .toggle-checkbox:checked + .toggle-label { background-color: rgba(212, 175, 55, 0.2); }
-        .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); border-color: #d4af37; background-color: #d4af37; }
+        .glass-panel:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
 
-        /* Custom Checkbox */
-        .row-checkbox {
+        select {
             appearance: none;
-            width: 16px;
-            height: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-            background-color: rgba(10, 20, 30, 0.8);
-            cursor: pointer;
-            position: relative;
-        }
-        .row-checkbox:checked {
-            background-color: rgba(212, 175, 55, 0.2);
-            border-color: #d4af37;
-        }
-        .row-checkbox:checked::after {
-            content: '';
-            position: absolute;
-            left: 5px;
-            top: 1px;
-            width: 4px;
-            height: 10px;
-            border: solid #d4af37;
-            border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d4af37' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
         }
 
-        body { background-color: transparent; color: #e2e8f0; }
-        
-        /* Hide number input arrows */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
+        body {
+            background-color: transparent;
+            color: #e2e8f0;
         }
     </style>
 </head>
 
 <body class="font-inter p-6 space-y-8 h-screen overflow-y-auto pb-24 relative">
 
+    <!-- Page Header -->
     <div class="flex items-center justify-between mb-6">
         <div>
             <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
-                <i data-lucide="bar-chart-horizontal" class="w-6 h-6 mr-3"></i> Reorder Points
+                <i data-lucide="clipboard-list" class="w-6 h-6 mr-3"></i> Supplier POs
             </h3>
-            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Manage Thresholds & Pipeline Inventory</p>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Purchasing & Receiving — Full PO Lifecycle
+            </p>
         </div>
-        
-        <div class="flex items-center space-x-6">
-            <label class="flex items-center cursor-pointer text-sm text-gray-300 hover:text-white transition-colors">
-                <div class="relative inline-block w-10 h-5 align-middle select-none transition duration-200 ease-in mr-3">
-                    <input type="checkbox" id="low-stock-filter" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-space border-4 border-white/10 appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out"/>
-                    <label for="low-stock-filter" class="toggle-label block overflow-hidden h-5 rounded-full bg-white/5 border border-white/10 cursor-pointer transition-colors duration-200 ease-in-out"></label>
-                </div>
-                <span class="font-bold tracking-wide">Show Low Stock Only</span>
-            </label>
-
-            <button id="create-po-btn" disabled class="disabled:opacity-40 disabled:cursor-not-allowed bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space font-bold px-5 py-2.5 rounded shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.5)] transition-all flex items-center text-sm uppercase tracking-widest">
-                <i data-lucide="file-plus" class="w-4 h-4 mr-2 fill-space"></i> Create Draft POs <span id="selected-count" class="ml-2 bg-space text-gold text-[10px] px-1.5 py-0.5 rounded-full hidden">0</span>
-            </button>
+        <div class="flex items-center space-x-3">
+            <select id="filter-status" onchange="renderPOTable()"
+                class="bg-space border border-white/10 text-xs text-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-gold/50 cursor-pointer">
+                <option value="all">Status: All</option>
+                <option value="Draft">⚪ Draft</option>
+                <option value="Sent">🔵 Sent</option>
+                <option value="Partially Received">🟡 Partial</option>
+                <option value="Completed">🟢 Completed</option>
+            </select>
         </div>
     </div>
 
-    <section>
-        <div class="glass-panel rounded-lg overflow-hidden flex flex-col min-h-[600px]">
-            
-            <div class="p-4 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-space/40">
-                <div class="relative flex-1 max-w-md">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"></i>
-                    <input type="text" placeholder="Search Product ID, Name, or Supplier..." class="w-full bg-space border border-white/10 text-sm text-white rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+    <!-- KPI Strip -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="glass-panel rounded-lg p-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded bg-gray-500/10 border border-gray-500/20 flex items-center justify-center">
+                    <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
                 </div>
-                <div class="flex items-center text-xs text-gray-400 font-mono space-x-4">
-                    <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> Healthy</div>
-                    <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-2 shadow-[0_0_5px_rgba(239,68,68,0.5)]"></span> Below Reorder Point</div>
-                </div>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm whitespace-nowrap" id="reorder-table">
-                    <thead class="text-[11px] text-gray-500 uppercase tracking-wider bg-[#010204] border-b border-white/10">
-                        <tr>
-                            <th class="px-4 py-4 w-10 text-center">
-                                <input type="checkbox" id="select-all" class="row-checkbox">
-                            </th>
-                            <th class="px-4 py-4 font-semibold">Product & ID</th>
-                            <th class="px-4 py-4 font-semibold">Supplier</th>
-                            <th class="px-4 py-4 font-semibold text-center">Item Type</th>
-                            <th class="px-4 py-4 font-semibold text-center" title="Sell-Through (30 Days)">ST (30D)</th>
-                            <th class="px-4 py-4 font-semibold text-right text-gray-400">On Hand</th>
-                            <th class="px-4 py-4 font-semibold text-right text-gray-400">On Order</th>
-                            <th class="px-4 py-4 font-semibold text-right text-white">Effective Stock</th>
-                            <th class="px-4 py-4 font-semibold text-center">Status</th>
-                            <th class="px-4 py-4 font-semibold text-center text-gold">Reorder Point</th>
-                            <th class="px-4 py-4 font-semibold text-center text-gold">Reorder Amt</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-white/5">
-                        
-                        <tr class="hover:bg-white/[0.02] transition-colors group data-row" data-status="low">
-                            <td class="px-4 py-4 text-center">
-                                <input type="checkbox" class="row-checkbox item-checkbox">
-                            </td>
-                            <td class="px-4 py-4">
-                                <p class="text-gray-200 font-bold mb-0.5">Agartha Signature Hoodie (M)</p>
-                                <span class="text-[10px] text-gray-500 font-mono">APP-HD-M-01</span>
-                            </td>
-                            <td class="px-4 py-4 text-gray-400 text-xs">Agartha Apparel Co.</td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="bg-space px-2 py-0.5 rounded border border-white/10 text-[9px] text-gray-400 uppercase tracking-widest">Prepackaged</span>
-                            </td>
-                            <td class="px-4 py-4 font-mono font-bold text-green-400 text-center">92%</td>
-                            <td class="px-4 py-4 font-mono text-gray-400 text-right">12</td>
-                            <td class="px-4 py-4 font-mono text-blue-400 text-right">0</td>
-                            <td class="px-4 py-4 font-mono font-bold text-white text-right text-base">12</td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
-                            </td>
-                            <td class="px-4 py-4 text-center">
-                                <input type="number" value="25" class="w-16 bg-space border border-white/10 text-white font-mono text-center rounded px-2 py-1 focus:border-gold/50 outline-none transition-colors hover:border-white/30">
-                            </td>
-                            <td class="px-4 py-4 text-center">
-                                <input type="number" value="50" class="w-16 bg-gold/10 border border-gold/30 text-gold font-bold font-mono text-center rounded px-2 py-1 focus:border-gold outline-none transition-colors">
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-white/[0.02] transition-colors group data-row" data-status="healthy">
-                            <td class="px-4 py-4 text-center">
-                                <input type="checkbox" class="row-checkbox item-checkbox">
-                            </td>
-                            <td class="px-4 py-4">
-                                <p class="text-gray-200 font-bold mb-0.5">Mineral Water 500ml</p>
-                                <span class="text-[10px] text-gray-500 font-mono">PRD-1045</span>
-                            </td>
-                            <td class="px-4 py-4 text-gray-400 text-xs">Beverage Inc.</td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="bg-space px-2 py-0.5 rounded border border-white/10 text-[9px] text-gray-400 uppercase tracking-widest">Prepackaged</span>
-                            </td>
-                            <td class="px-4 py-4 font-mono font-bold text-yellow-500 text-center">65%</td>
-                            <td class="px-4 py-4 font-mono text-gray-400 text-right">80</td>
-                            <td class="px-4 py-4 font-mono text-blue-400 text-right">100</td>
-                            <td class="px-4 py-4 font-mono font-bold text-white text-right text-base">180</td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500"></span>
-                            </td>
-                            <td class="px-4 py-4 text-center">
-                                <input type="number" value="150" class="w-16 bg-space border border-white/10 text-white font-mono text-center rounded px-2 py-1 focus:border-gold/50 outline-none transition-colors hover:border-white/30">
-                            </td>
-                            <td class="px-4 py-4 text-center">
-                                <input type="number" value="200" class="w-16 bg-space border border-white/10 text-gray-300 font-mono text-center rounded px-2 py-1 focus:border-gold/50 outline-none transition-colors hover:border-white/30">
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-white/[0.02] transition-colors group data-row bg-red-500/[0.02]" data-status="low">
-                            <td class="px-4 py-4 text-center">
-                                <input type="checkbox" class="row-checkbox item-checkbox">
-                            </td>
-                            <td class="px-4 py-4">
-                                <p class="text-gray-200 font-bold mb-0.5">Premium Ground Beef</p>
-                                <span class="text-[10px] text-gray-500 font-mono">PRD-2201</span>
-                            </td>
-                            <td class="px-4 py-4 text-gray-400 text-xs">MeatCo Prime</td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="bg-space px-2 py-0.5 rounded border border-white/10 text-[9px] text-gray-400 uppercase tracking-widest">Ingredient</span>
-                            </td>
-                            <td class="px-4 py-4 font-mono font-bold text-green-400 text-center">98%</td>
-                            <td class="px-4 py-4 font-mono text-gray-400 text-right">8 <span class="text-[9px]">Kg</span></td>
-                            <td class="px-4 py-4 font-mono text-blue-400 text-right">0 <span class="text-[9px]">Kg</span></td>
-                            <td class="px-4 py-4 font-mono font-bold text-red-400 text-right text-base">8</td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
-                            </td>
-                            <td class="px-4 py-4 text-center">
-                                <input type="number" value="20" class="w-16 bg-space border border-white/10 text-white font-mono text-center rounded px-2 py-1 focus:border-gold/50 outline-none transition-colors hover:border-white/30">
-                            </td>
-                            <td class="px-4 py-4 text-center">
-                                <input type="number" value="30" class="w-16 bg-gold/10 border border-gold/30 text-gold font-bold font-mono text-center rounded px-2 py-1 focus:border-gold outline-none transition-colors">
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-white/[0.02] transition-colors group data-row" data-status="healthy">
-                            <td class="px-4 py-4 text-center">
-                                <input type="checkbox" class="row-checkbox item-checkbox">
-                            </td>
-                            <td class="px-4 py-4">
-                                <p class="text-gray-200 font-bold mb-0.5">Takeaway Coffee Cups</p>
-                                <span class="text-[10px] text-gray-500 font-mono">CNS-882</span>
-                            </td>
-                            <td class="px-4 py-4 text-gray-400 text-xs">FastPrint Packaging</td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="bg-space px-2 py-0.5 rounded border border-white/10 text-[9px] text-gray-400 uppercase tracking-widest">Consumable</span>
-                            </td>
-                            <td class="px-4 py-4 font-mono font-bold text-gray-400 text-center">45%</td>
-                            <td class="px-4 py-4 font-mono text-gray-400 text-right">1,200</td>
-                            <td class="px-4 py-4 font-mono text-blue-400 text-right">0</td>
-                            <td class="px-4 py-4 font-mono font-bold text-white text-right text-base">1,200</td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500"></span>
-                            </td>
-                            <td class="px-4 py-4 text-center">
-                                <input type="number" value="500" class="w-16 bg-space border border-white/10 text-white font-mono text-center rounded px-2 py-1 focus:border-gold/50 outline-none transition-colors hover:border-white/30">
-                            </td>
-                            <td class="px-4 py-4 text-center">
-                                <input type="number" value="2000" class="w-16 bg-space border border-white/10 text-gray-300 font-mono text-center rounded px-2 py-1 focus:border-gold/50 outline-none transition-colors hover:border-white/30">
-                            </td>
-                        </tr>
-                        
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="p-4 border-t border-white/10 mt-auto bg-space/40 flex justify-between items-center text-xs text-gray-400 font-sans">
-                <p>Showing 4 of 1,204 tracked SKUs</p>
-                <div class="flex items-center space-x-1 font-sans">
-                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-50" disabled>Prev</button>
-                    <button class="px-3 py-1.5 rounded bg-gold/20 text-gold border border-gold/30">1</button>
-                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">2</button>
-                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">3</button>
-                    <span class="px-2">...</span>
-                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">120</button>
-                    <button class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">Next</button>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Drafts</p>
+                    <p class="text-xl font-orbitron text-white font-bold" id="kpi-draft">0</p>
                 </div>
             </div>
-            
+        </div>
+        <div class="glass-panel rounded-lg p-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <i data-lucide="send" class="w-4 h-4 text-blue-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Sent</p>
+                    <p class="text-xl font-orbitron text-blue-400 font-bold" id="kpi-sent">0</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-panel rounded-lg p-4">
+            <div class="flex items-center space-x-3">
+                <div
+                    class="w-9 h-9 rounded bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+                    <i data-lucide="clock" class="w-4 h-4 text-yellow-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Partial</p>
+                    <p class="text-xl font-orbitron text-yellow-400 font-bold" id="kpi-partial">0</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-panel rounded-lg p-4">
+            <div class="flex items-center space-x-3">
+                <div
+                    class="w-9 h-9 rounded bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Completed</p>
+                    <p class="text-xl font-orbitron text-green-400 font-bold" id="kpi-completed">0</p>
+                </div>
+            </div>
         </div>
     </section>
 
+    <!-- PO Dashboard Table -->
+    <section>
+        <div class="glass-panel rounded-lg overflow-hidden flex flex-col min-h-[400px]">
+            <div class="overflow-x-auto flex-1">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="text-xs text-gray-500 uppercase tracking-wider bg-[#010204] border-b border-white/10">
+                        <tr>
+                            <th class="px-5 py-4 font-semibold">PO Number</th>
+                            <th class="px-5 py-4 font-semibold">Supplier</th>
+                            <th class="px-5 py-4 font-semibold">Sent Date</th>
+                            <th class="px-5 py-4 font-semibold">Total Value (RM)</th>
+                            <th class="px-5 py-4 font-semibold">Status</th>
+                            <th class="px-5 py-4 font-semibold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="po-table-body" class="divide-y divide-white/5 font-mono text-xs">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== PO DETAIL MODAL ==================== -->
+    <div id="po-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-space/80 backdrop-blur-sm hidden overflow-y-auto pt-10 pb-10">
+        <div
+            class="glass-panel rounded-lg w-full max-w-4xl border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] flex flex-col my-auto relative">
+
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg">
+                <div>
+                    <h3 id="modal-po-title" class="font-cinzel text-lg text-gold flex items-center tracking-wider">
+                        <i data-lucide="file-text" class="w-5 h-5 mr-2"></i> PO-2026-0142
+                    </h3>
+                    <p id="modal-po-supplier" class="text-xs text-gray-400 mt-1"></p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span id="modal-po-status-pill"
+                        class="px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold border"></span>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Line Items Table -->
+            <div class="p-6">
+                <div class="border border-white/5 rounded overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-xs text-gray-500 uppercase tracking-wider bg-[#010204]">
+                            <tr>
+                                <th class="px-5 py-3 font-semibold">Product</th>
+                                <th class="px-5 py-3 font-semibold text-center">Qty Ordered</th>
+                                <th id="col-qty-received" class="px-5 py-3 font-semibold text-center hidden">Qty
+                                    Received</th>
+                                <th id="col-variance" class="px-5 py-3 font-semibold text-center hidden">Variance</th>
+                                <th class="px-5 py-3 font-semibold text-right">Unit Cost</th>
+                                <th class="px-5 py-3 font-semibold text-right">Line Total (RM)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-line-items" class="divide-y divide-white/5 font-mono text-xs">
+                        </tbody>
+                        <tfoot class="border-t border-white/10">
+                            <tr>
+                                <td colspan="4"
+                                    class="px-5 py-3 text-right text-xs text-gray-400 uppercase tracking-widest font-sans font-bold">
+                                    Order Total</td>
+                                <td class="px-5 py-3 text-right text-gold font-orbitron font-bold text-sm"
+                                    id="modal-order-total">RM 0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Variance Alert Banner (hidden by default) -->
+                <div id="variance-alert" class="hidden mt-4 p-4 bg-yellow-500/5 border border-yellow-500/20 rounded-lg">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-400"></i>
+                        <p class="text-sm text-yellow-300 font-semibold">Variance Detected</p>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Some items were received short. You can keep the PO open for a
+                        future truck or close it short to clear the pipeline.</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer (Dynamic Action Buttons) -->
+            <div id="modal-footer"
+                class="p-5 border-t border-white/10 bg-space/80 rounded-b-lg flex items-center justify-between">
+                <div id="modal-runner-note" class="text-[10px] text-gray-500 italic hidden">
+                    <i data-lucide="truck" class="w-3 h-3 inline mr-1"></i> This PO is pushed to the Runner Crew's
+                    "Expected Deliveries" queue.
+                </div>
+                <div class="flex space-x-3 ml-auto" id="modal-actions">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"
+        class="fixed bottom-8 right-8 bg-green-500/20 border border-green-500/40 text-green-400 px-6 py-3 rounded-lg shadow-lg backdrop-blur-sm text-sm font-semibold flex items-center space-x-2 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-50">
+        <i data-lucide="check-circle" class="w-5 h-5"></i>
+        <span id="toast-msg"></span>
+    </div>
+
     <script>
-        // Initialize Icons
         lucide.createIcons();
 
-        // Element References
-        const lowStockFilter = document.getElementById('low-stock-filter');
-        const tableRows = document.querySelectorAll('.data-row');
-        const selectAllCheckbox = document.getElementById('select-all');
-        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
-        const createPoBtn = document.getElementById('create-po-btn');
-        const selectedCountBadge = document.getElementById('selected-count');
+        // ── Suppliers ──
+        const suppliers = [
+            { id: 'SUP-01', name: 'Cahaya Distributors', email: 'orders@cahayadist.com.my' },
+            { id: 'SUP-02', name: 'Seri Alam Trading', email: 'procurement@serialam.my' },
+            { id: 'SUP-03', name: 'Metro F&B Supply Co.', email: 'po@metrofnb.com' },
+            { id: 'SUP-04', name: 'KL Fresh Imports', email: 'sales@klfresh.com.my' },
+            { id: 'SUP-05', name: 'Johor Paper & Pack', email: 'orders@johorpp.com' },
+        ];
+        function getSupplier(id) { return suppliers.find(s => s.id === id) || { name: '—', email: '' }; }
 
-        // Logic: Filter "Show Low Stock Only"
-        lowStockFilter.addEventListener('change', function() {
-            const showOnlyLow = this.checked;
-            
-            tableRows.forEach(row => {
-                if (showOnlyLow) {
-                    if (row.getAttribute('data-status') === 'low') {
-                        row.style.display = 'table-row';
-                    } else {
-                        row.style.display = 'none';
-                        // Auto-uncheck hidden rows so they aren't accidentally included in PO
-                        const cb = row.querySelector('.item-checkbox');
-                        if(cb.checked) {
-                            cb.checked = false;
-                        }
-                    }
-                } else {
-                    row.style.display = 'table-row';
-                }
-            });
-            updateCreatePoButtonState();
-            updateSelectAllState();
-        });
+        // ── PO Data ──
+        let purchaseOrders = [
+            {
+                poNumber: 'PO-2026-0142', supplierId: 'SUP-01', sentDate: null, status: 'Draft',
+                items: [
+                    { productId: 'PRD-1045', name: 'Mineral Water 500ml', qtyOrdered: 120, qtyReceived: null, unitCost: 0.80 },
+                    { productId: 'PRD-1046', name: 'Craft Cola 330ml', qtyOrdered: 80, qtyReceived: null, unitCost: 1.50 },
+                ]
+            },
+            {
+                poNumber: 'PO-2026-0141', supplierId: 'SUP-04', sentDate: '2026-02-28', status: 'Sent',
+                items: [
+                    { productId: 'PRD-1049', name: 'Raw Beef Tenderloin', qtyOrdered: 20, qtyReceived: null, unitCost: 42.00 },
+                    { productId: 'PRD-1050', name: 'Fresh Atlantic Salmon', qtyOrdered: 15, qtyReceived: null, unitCost: 58.00 },
+                    { productId: 'PRD-1048', name: 'Organic Granola Bar', qtyOrdered: 50, qtyReceived: null, unitCost: 3.20 },
+                ]
+            },
+            {
+                poNumber: 'PO-2026-0139', supplierId: 'SUP-02', sentDate: '2026-02-25', status: 'Partially Received',
+                items: [
+                    { productId: 'PRD-1047', name: 'Artisan Chips 50g', qtyOrdered: 60, qtyReceived: 42, unitCost: 2.10 },
+                ]
+            },
+            {
+                poNumber: 'PO-2026-0136', supplierId: 'SUP-03', sentDate: '2026-02-20', status: 'Completed',
+                items: [
+                    { productId: 'PRD-1053', name: 'Cold Brew Coffee 250ml', qtyOrdered: 48, qtyReceived: 48, unitCost: 4.20 },
+                ]
+            },
+            {
+                poNumber: 'PO-2026-0130', supplierId: 'SUP-05', sentDate: '2026-02-15', status: 'Completed',
+                items: [
+                    { productId: 'PRD-1051', name: 'Branded Paper Napkins', qtyOrdered: 30, qtyReceived: 30, unitCost: 4.50 },
+                    { productId: 'PRD-1052', name: 'Eco Takeaway Container', qtyOrdered: 20, qtyReceived: 18, unitCost: 12.80 },
+                ]
+            },
+            {
+                poNumber: 'PO-2026-0143', supplierId: 'SUP-03', sentDate: null, status: 'Draft',
+                items: [
+                    { productId: 'PRD-1053', name: 'Cold Brew Coffee 250ml', qtyOrdered: 48, qtyReceived: null, unitCost: 4.20 },
+                ]
+            },
+        ];
 
-        // Logic: Enable/Disable [Create Draft POs] Button
-        function updateCreatePoButtonState() {
-            let checkedCount = 0;
-            itemCheckboxes.forEach(cb => {
-                if (cb.checked) checkedCount++;
-            });
-
-            if (checkedCount > 0) {
-                createPoBtn.removeAttribute('disabled');
-                selectedCountBadge.textContent = checkedCount;
-                selectedCountBadge.classList.remove('hidden');
-                selectedCountBadge.classList.add('inline-flex');
-            } else {
-                createPoBtn.setAttribute('disabled', 'true');
-                selectedCountBadge.classList.add('hidden');
-                selectedCountBadge.classList.remove('inline-flex');
-            }
+        // ── Status Pill Renderer ──
+        function statusPill(status) {
+            const map = {
+                'Draft': { bg: 'bg-gray-500/10', text: 'text-gray-400', border: 'border-gray-500/20', dot: 'bg-gray-400' },
+                'Sent': { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', dot: 'bg-blue-400' },
+                'Partially Received': { bg: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/20', dot: 'bg-yellow-400' },
+                'Completed': { bg: 'bg-green-500/10', text: 'text-green-400', border: 'border-green-500/20', dot: 'bg-green-400' },
+            };
+            const s = map[status] || map['Draft'];
+            return `<span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full ${s.bg} ${s.text} ${s.border} border text-[10px] uppercase tracking-widest font-bold font-sans">
+                <span class="w-1.5 h-1.5 rounded-full ${s.dot}"></span><span>${status}</span>
+            </span>`;
         }
 
-        // Logic: Master Checkbox (Select All)
-        selectAllCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked;
-            itemCheckboxes.forEach(cb => {
-                // Only check visible rows
-                const row = cb.closest('tr');
-                if (row.style.display !== 'none') {
-                    cb.checked = isChecked;
-                }
-            });
-            updateCreatePoButtonState();
-        });
-
-        // Logic: Individual Checkboxes
-        itemCheckboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                updateCreatePoButtonState();
-                updateSelectAllState();
-            });
-        });
-
-        function updateSelectAllState() {
-            let allVisibleChecked = true;
-            let hasVisibleRows = false;
-
-            itemCheckboxes.forEach(cb => {
-                const row = cb.closest('tr');
-                if (row.style.display !== 'none') {
-                    hasVisibleRows = true;
-                    if (!cb.checked) {
-                        allVisibleChecked = false;
-                    }
-                }
-            });
-
-            if (hasVisibleRows && allVisibleChecked) {
-                selectAllCheckbox.checked = true;
-            } else {
-                selectAllCheckbox.checked = false;
-            }
+        function calcTotal(items) {
+            return items.reduce((sum, i) => sum + (i.qtyOrdered * i.unitCost), 0);
         }
+
+        // ── Render PO Table ──
+        function renderPOTable() {
+            const tbody = document.getElementById('po-table-body');
+            const filter = document.getElementById('filter-status').value;
+
+            let filtered = purchaseOrders;
+            if (filter !== 'all') filtered = purchaseOrders.filter(po => po.status === filter);
+
+            tbody.innerHTML = '';
+
+            filtered.forEach((po) => {
+                const idx = purchaseOrders.indexOf(po);
+                const sup = getSupplier(po.supplierId);
+                const total = calcTotal(po.items);
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-white/[0.02] transition-colors cursor-pointer group';
+                row.onclick = () => openPOModal(idx);
+
+                row.innerHTML = `
+                    <td class="px-5 py-4">
+                        <span class="text-gold font-semibold font-sans">${po.poNumber}</span>
+                    </td>
+                    <td class="px-5 py-4 text-gray-300 font-sans">${sup.name}</td>
+                    <td class="px-5 py-4 text-gray-400 font-sans">${po.sentDate || '<span class="text-gray-600 italic">Not sent</span>'}</td>
+                    <td class="px-5 py-4 text-gray-200 font-semibold">RM ${total.toFixed(2)}</td>
+                    <td class="px-5 py-4">${statusPill(po.status)}</td>
+                    <td class="px-5 py-4 text-right">
+                        <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded group-hover:text-gold transition-colors" title="View PO Details">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            lucide.createIcons();
+            updateKPIs();
+        }
+
+        function updateKPIs() {
+            document.getElementById('kpi-draft').textContent = purchaseOrders.filter(p => p.status === 'Draft').length;
+            document.getElementById('kpi-sent').textContent = purchaseOrders.filter(p => p.status === 'Sent').length;
+            document.getElementById('kpi-partial').textContent = purchaseOrders.filter(p => p.status === 'Partially Received').length;
+            document.getElementById('kpi-completed').textContent = purchaseOrders.filter(p => p.status === 'Completed').length;
+        }
+
+        // ── PO Detail Modal ──
+        const modal = document.getElementById('po-modal');
+        let currentPOIndex = null;
+
+        function openPOModal(idx) {
+            currentPOIndex = idx;
+            const po = purchaseOrders[idx];
+            const sup = getSupplier(po.supplierId);
+            const total = calcTotal(po.items);
+            const hasVariance = po.status === 'Partially Received' || (po.status === 'Completed' && po.items.some(i => i.qtyReceived !== null && i.qtyReceived !== i.qtyOrdered));
+            const showReceived = po.status === 'Partially Received' || po.status === 'Completed';
+
+            // Header
+            document.getElementById('modal-po-title').innerHTML = `<i data-lucide="file-text" class="w-5 h-5 mr-2"></i> ${po.poNumber}`;
+            document.getElementById('modal-po-supplier').textContent = `${sup.name}  •  ${sup.email}`;
+            document.getElementById('modal-po-status-pill').innerHTML = statusPill(po.status);
+
+            // Show/hide received columns
+            document.getElementById('col-qty-received').classList.toggle('hidden', !showReceived);
+            document.getElementById('col-variance').classList.toggle('hidden', !showReceived);
+
+            // Adjust footer colspan
+            const footerRow = document.querySelector('#modal-line-items + tfoot tr td:first-child');
+            if (footerRow) footerRow.colSpan = showReceived ? 5 : 4;
+
+            // Line items
+            const lineBody = document.getElementById('modal-line-items');
+            lineBody.innerHTML = '';
+
+            po.items.forEach(item => {
+                const lineTotal = item.qtyOrdered * item.unitCost;
+                const variance = (item.qtyReceived != null) ? (item.qtyReceived - item.qtyOrdered) : null;
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-white/[0.02]';
+                tr.innerHTML = `
+                    <td class="px-5 py-3 font-sans text-gray-200">${item.name} <span class="text-gray-500 text-[10px] ml-1">${item.productId}</span></td>
+                    <td class="px-5 py-3 text-center text-gray-300">${item.qtyOrdered}</td>
+                    ${showReceived ? `<td class="px-5 py-3 text-center ${item.qtyReceived != null ? 'text-gray-200 font-semibold' : 'text-gray-600 italic'}">${item.qtyReceived != null ? item.qtyReceived : 'Pending'}</td>` : ''}
+                    ${showReceived ? `<td class="px-5 py-3 text-center font-semibold ${variance != null ? (variance < 0 ? 'text-red-400' : 'text-green-400') : 'text-gray-600'}">${variance != null ? (variance >= 0 ? '+' + variance : variance) : '—'}</td>` : ''}
+                    <td class="px-5 py-3 text-right text-gray-400">RM ${item.unitCost.toFixed(2)}</td>
+                    <td class="px-5 py-3 text-right text-gray-200 font-semibold">RM ${lineTotal.toFixed(2)}</td>
+                `;
+                lineBody.appendChild(tr);
+            });
+
+            document.getElementById('modal-order-total').textContent = `RM ${total.toFixed(2)}`;
+
+            // Variance alert
+            const varianceAlert = document.getElementById('variance-alert');
+            varianceAlert.classList.toggle('hidden', !hasVariance || po.status === 'Completed');
+
+            // Runner note
+            document.getElementById('modal-runner-note').classList.toggle('hidden', po.status === 'Draft' || po.status === 'Completed');
+
+            // Action buttons
+            const actionsDiv = document.getElementById('modal-actions');
+            actionsDiv.innerHTML = '';
+
+            const cancelBtn = `<button onclick="closeModal()" class="px-4 py-2 text-sm font-medium rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Close</button>`;
+
+            if (po.status === 'Draft') {
+                actionsDiv.innerHTML = `
+                    ${cancelBtn}
+                    <button onclick="downloadPDF(${idx})" class="px-4 py-2 text-sm font-bold rounded bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 transition-all flex items-center space-x-2">
+                        <i data-lucide="download" class="w-4 h-4"></i><span>Download PDF</span>
+                    </button>
+                    <button onclick="approveAndEmail(${idx})" class="px-5 py-2 text-sm font-bold rounded bg-gold/20 text-gold border border-gold/50 hover:bg-gold hover:text-space transition-all shadow-[0_0_10px_rgba(212,175,55,0.2)] flex items-center space-x-2">
+                        <i data-lucide="mail" class="w-4 h-4"></i><span>Approve & Email PO</span>
+                    </button>`;
+            } else if (po.status === 'Sent') {
+                actionsDiv.innerHTML = `
+                    ${cancelBtn}
+                    <button onclick="downloadPDF(${idx})" class="px-4 py-2 text-sm font-bold rounded bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 transition-all flex items-center space-x-2">
+                        <i data-lucide="download" class="w-4 h-4"></i><span>Download PDF</span>
+                    </button>
+                    <div class="text-[10px] text-blue-400 font-sans flex items-center space-x-1 border border-blue-500/20 bg-blue-500/5 px-3 py-2 rounded">
+                        <i data-lucide="clock" class="w-3 h-3"></i><span>Awaiting delivery from supplier</span>
+                    </div>`;
+            } else if (po.status === 'Partially Received') {
+                actionsDiv.innerHTML = `
+                    ${cancelBtn}
+                    <button onclick="keepOpen(${idx})" class="px-4 py-2 text-sm font-bold rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/20 transition-all flex items-center space-x-2">
+                        <i data-lucide="clock" class="w-4 h-4"></i><span>Keep Open</span>
+                    </button>
+                    <button onclick="closePOShort(${idx})" class="px-5 py-2 text-sm font-bold rounded bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-all flex items-center space-x-2">
+                        <i data-lucide="x-circle" class="w-4 h-4"></i><span>Close PO Short</span>
+                    </button>`;
+            } else {
+                actionsDiv.innerHTML = `
+                    ${cancelBtn}
+                    <button onclick="downloadPDF(${idx})" class="px-4 py-2 text-sm font-bold rounded bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10 transition-all flex items-center space-x-2">
+                        <i data-lucide="download" class="w-4 h-4"></i><span>Download PDF</span>
+                    </button>`;
+            }
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            currentPOIndex = null;
+        }
+
+        // ── PO Actions ──
+        function approveAndEmail(idx) {
+            const po = purchaseOrders[idx];
+            const sup = getSupplier(po.supplierId);
+            const today = new Date().toISOString().split('T')[0];
+            po.status = 'Sent';
+            po.sentDate = today;
+            showToast(`PO ${po.poNumber} sent to ${sup.email} and pushed to Runner Crew queue.`);
+            closeModal();
+            renderPOTable();
+        }
+
+        function downloadPDF(idx) {
+            const po = purchaseOrders[idx];
+            showToast(`PDF generated for ${po.poNumber}. Ready for WhatsApp forwarding.`);
+        }
+
+        function keepOpen(idx) {
+            showToast(`${purchaseOrders[idx].poNumber} kept open. Runners will watch for the remaining items.`);
+            closeModal();
+        }
+
+        function closePOShort(idx) {
+            purchaseOrders[idx].status = 'Completed';
+            showToast(`${purchaseOrders[idx].poNumber} closed short. Missing units cleared from pipeline.`);
+            closeModal();
+            renderPOTable();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none'), 4500);
+        }
+
+        // ── Init ──
+        renderPOTable();
     </script>
 </body>
+
 </html>

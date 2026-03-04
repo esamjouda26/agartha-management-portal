@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Catalog | Merch & Inventory</title>
+    <title>Product Catalog</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,7 +38,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* Custom Webkit Scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -57,7 +56,6 @@
             background: rgba(212, 175, 55, 0.5);
         }
 
-        /* Glassmorphism utility */
         .glass-panel {
             background-color: rgba(10, 20, 30, 0.6);
             backdrop-filter: blur(12px);
@@ -71,7 +69,6 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
         }
 
-        /* Custom Select Styling */
         select {
             appearance: none;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d4af37' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
@@ -80,370 +77,324 @@
             background-size: 1.5em 1.5em;
         }
 
-        /* Toggle Switch Styling */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #22c55e;
+        /* Status toggle switch */
+        .status-toggle {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
         }
 
-        .toggle-checkbox:checked+.toggle-label {
+        .status-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .status-toggle .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: 0.3s;
+        }
+
+        .status-toggle .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .status-toggle input:checked+.slider {
+            background-color: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+
+        .status-toggle input:checked+.slider:before {
+            transform: translateX(18px);
             background-color: #22c55e;
-        }
-
-        .toggle-checkbox:checked+.toggle-label:after {
-            transform: translateX(100%);
-            border-color: white;
-        }
-
-        .toggle-checkbox-red:checked {
-            right: 0;
-            border-color: #ef4444;
-        }
-
-        .toggle-checkbox-red:checked+.toggle-label-red {
-            background-color: #ef4444;
-        }
-
-        .toggle-checkbox-red:checked+.toggle-label-red:after {
-            transform: translateX(100%);
-            border-color: white;
         }
 
         body {
             background-color: transparent;
             color: #e2e8f0;
         }
+
+        /* Inline select for supplier column */
+        .inline-select {
+            background-color: transparent;
+            border: 1px solid transparent;
+            padding: 4px 24px 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .inline-select:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            background-color: rgba(2, 4, 8, 0.5);
+        }
+
+        .inline-select:focus {
+            border-color: rgba(212, 175, 55, 0.5);
+            background-color: #020408;
+            outline: none;
+        }
     </style>
 </head>
 
 <body class="font-inter p-6 space-y-8 h-screen overflow-y-auto pb-24 relative">
 
+    <!-- Page Header -->
     <div class="flex items-center justify-between mb-6">
         <div>
             <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
                 <i data-lucide="package" class="w-6 h-6 mr-3"></i> Product Catalog
             </h3>
-            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Central Merch & Inventory Master Data</p>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Central Merchandise & Ingredient Registry
+            </p>
         </div>
-        <button onclick="openModal()"
+        <button onclick="openModal()" id="btn-add-product"
             class="bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space font-bold px-5 py-2.5 rounded shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.5)] transition-all flex items-center text-sm uppercase tracking-widest">
             <i data-lucide="plus" class="w-4 h-4 mr-2 fill-space"></i> Add Product
         </button>
     </div>
 
-    <section>
-        <div class="glass-panel rounded-lg overflow-hidden flex flex-col min-h-[600px]">
+    <!-- Summary KPI Cards -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="glass-panel rounded-lg p-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <i data-lucide="boxes" class="w-4 h-4 text-blue-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Total SKUs</p>
+                    <p class="text-xl font-orbitron text-white font-bold" id="kpi-total">8</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-panel rounded-lg p-4">
+            <div class="flex items-center space-x-3">
+                <div
+                    class="w-9 h-9 rounded bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Active</p>
+                    <p class="text-xl font-orbitron text-green-400 font-bold" id="kpi-active">6</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-panel rounded-lg p-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded bg-gold/10 border border-gold/20 flex items-center justify-center">
+                    <i data-lucide="tag" class="w-4 h-4 text-gold"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Prepackaged</p>
+                    <p class="text-xl font-orbitron text-gold font-bold" id="kpi-prepackaged">5</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-panel rounded-lg p-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                    <i data-lucide="archive" class="w-4 h-4 text-red-400"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Discontinued</p>
+                    <p class="text-xl font-orbitron text-red-400 font-bold" id="kpi-discontinued">2</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
+    <!-- Main Data Table -->
+    <section>
+        <div class="glass-panel rounded-lg overflow-hidden flex flex-col min-h-[500px]">
+
+            <!-- Toolbar: Search + Filters -->
             <div
                 class="p-4 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-space/40">
                 <div class="relative flex-1 max-w-md">
                     <i data-lucide="search"
                         class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"></i>
-                    <input type="text" placeholder="Search ID, Name, or Barcode..."
-                        class="w-full bg-space border border-white/10 text-sm text-white rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                    <input id="search-input" type="text" placeholder="Search by name, SKU, or Product ID..."
+                        class="w-full bg-space border border-white/10 text-sm text-white rounded-md pl-10 pr-4 py-2 focus:outline-none focus:border-gold/50 transition-all"
+                        oninput="filterTable()">
                 </div>
                 <div class="flex items-center space-x-3">
-                    <select
+                    <select id="filter-type" onchange="filterTable()"
                         class="bg-space border border-white/10 text-xs text-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-gold/50 cursor-pointer">
                         <option value="all">Type: All</option>
-                        <option value="prepackaged">Prepackaged</option>
-                        <option value="raw">Raw Ingredient</option>
-                        <option value="consumable">Consumable</option>
+                        <option value="Prepackaged">Prepackaged</option>
+                        <option value="Raw Ingredient">Raw Ingredient</option>
+                        <option value="Consumable">Consumable</option>
                     </select>
-                    <select
+                    <select id="filter-status" onchange="filterTable()"
                         class="bg-space border border-white/10 text-xs text-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:border-gold/50 cursor-pointer">
-                        <option value="active">Status: Active</option>
-                        <option value="discontinued">Status: Discontinued</option>
                         <option value="all">Status: All</option>
+                        <option value="Active">Active</option>
+                        <option value="Discontinued">Discontinued</option>
                     </select>
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <!-- Table -->
+            <div class="overflow-x-auto flex-1">
                 <table class="w-full text-left text-sm whitespace-nowrap">
                     <thead class="text-xs text-gray-500 uppercase tracking-wider bg-[#010204] border-b border-white/10">
                         <tr>
-                            <th class="px-6 py-4 font-semibold">Product & ID</th>
-                            <th class="px-6 py-4 font-semibold">SKU / Barcode</th>
-                            <th class="px-6 py-4 font-semibold">Type & UOM</th>
-                            <th class="px-6 py-4 font-semibold text-right">Cost Price</th>
-                            <th class="px-6 py-4 font-semibold text-right">Retail Price</th>
-                            <th class="px-6 py-4 font-semibold text-center">Margin %</th>
-                            <th class="px-6 py-4 font-semibold">Supplier (Inline)</th>
-                            <th class="px-6 py-4 font-semibold text-center">Status</th>
-                            <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                            <th class="px-5 py-4 font-semibold">Product ID</th>
+                            <th class="px-5 py-4 font-semibold">Name</th>
+                            <th class="px-5 py-4 font-semibold">SKU / Barcode</th>
+                            <th class="px-5 py-4 font-semibold">Item Type</th>
+                            <th class="px-5 py-4 font-semibold">Base UOM</th>
+                            <th class="px-5 py-4 font-semibold">Cost Price</th>
+                            <th class="px-5 py-4 font-semibold">Retail Price</th>
+                            <th class="px-5 py-4 font-semibold text-gold">Margin %</th>
+                            <th class="px-5 py-4 font-semibold">Supplier</th>
+                            <th class="px-5 py-4 font-semibold">Status</th>
+                            <th class="px-5 py-4 font-semibold text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5 font-mono text-xs">
-
-                        <tr class="hover:bg-white/[0.02] transition-colors group">
-                            <td class="px-6 py-4">
-                                <p class="text-gray-200 font-bold font-sans tracking-wide">Mineral Water 500ml</p>
-                                <span class="text-[10px] text-gray-500">PRD-1045</span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-400">9556123400128</td>
-                            <td class="px-6 py-4">
-                                <p class="text-gray-300 font-sans text-xs">Prepackaged</p>
-                                <span
-                                    class="bg-white/5 px-2 py-0.5 rounded border border-white/10 text-[9px] text-gray-400">Piece</span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-400 text-right">RM 0.80</td>
-                            <td class="px-6 py-4 text-gold font-bold text-sm text-right">RM 3.50</td>
-                            <td class="px-6 py-4 text-white font-bold text-center">77.1%</td>
-                            <td class="px-6 py-4">
-                                <select
-                                    class="bg-space border border-white/10 text-gray-300 text-[10px] uppercase rounded px-2 py-1 focus:outline-none focus:border-gold cursor-pointer w-36">
-                                    <option value="bev_inc" selected>Beverage Inc.</option>
-                                    <option value="local_dist">Local Distributors</option>
-                                    <option value="fresh_farms">FreshFarms Local</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <div class="relative inline-block w-8 h-4 align-middle select-none">
-                                    <input type="checkbox" checked
-                                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 border-space appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out" />
-                                    <label
-                                        class="toggle-label block overflow-hidden h-4 rounded-full bg-space border border-white/10 cursor-pointer transition-colors duration-200 ease-in-out"></label>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded"
-                                    title="Edit Product"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-white/[0.02] transition-colors group">
-                            <td class="px-6 py-4">
-                                <p class="text-gray-200 font-bold font-sans tracking-wide">Premium Ground Beef</p>
-                                <span class="text-[10px] text-gray-500">PRD-2201</span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-600 italic text-[10px]">No Barcode</td>
-                            <td class="px-6 py-4">
-                                <p class="text-gray-300 font-sans text-xs">Raw Ingredient</p>
-                                <span
-                                    class="bg-white/5 px-2 py-0.5 rounded border border-white/10 text-[9px] text-gray-400">Kg</span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-400 text-right">RM 25.00</td>
-                            <td class="px-6 py-4 text-gray-600 text-right italic text-[10px]">Not Sold Directly</td>
-                            <td class="px-6 py-4 text-gray-600 text-center italic text-[10px]">N/A</td>
-                            <td class="px-6 py-4">
-                                <select
-                                    class="bg-space border border-white/10 text-gray-300 text-[10px] uppercase rounded px-2 py-1 focus:outline-none focus:border-gold cursor-pointer w-36">
-                                    <option value="meat_co" selected>MeatCo Prime</option>
-                                    <option value="fresh_farms">FreshFarms Local</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <div class="relative inline-block w-8 h-4 align-middle select-none">
-                                    <input type="checkbox" checked
-                                        class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 border-space appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out" />
-                                    <label
-                                        class="toggle-label block overflow-hidden h-4 rounded-full bg-space border border-white/10 cursor-pointer transition-colors duration-200 ease-in-out"></label>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded"
-                                    title="Edit Product"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                            </td>
-                        </tr>
-
-                        <tr class="hover:bg-white/[0.02] transition-colors group opacity-60">
-                            <td class="px-6 py-4">
-                                <p class="text-gray-400 font-bold font-sans tracking-wide">Cocktail Napkins (Black)</p>
-                                <span class="text-[10px] text-gray-500">PRD-0855</span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-500">1002938475612</td>
-                            <td class="px-6 py-4">
-                                <p class="text-gray-400 font-sans text-xs">Consumable</p>
-                                <span
-                                    class="bg-white/5 px-2 py-0.5 rounded border border-white/10 text-[9px] text-gray-500">Pack
-                                    (500)</span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-500 text-right">RM 15.20</td>
-                            <td class="px-6 py-4 text-gray-600 text-right italic text-[10px]">Not Sold Directly</td>
-                            <td class="px-6 py-4 text-gray-600 text-center italic text-[10px]">N/A</td>
-                            <td class="px-6 py-4">
-                                <select
-                                    class="bg-space border border-white/10 text-gray-500 text-[10px] uppercase rounded px-2 py-1 focus:outline-none focus:border-gold cursor-pointer w-36"
-                                    disabled>
-                                    <option value="paper_supplies" selected>Paper Supplies Co.</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <div class="relative inline-block w-8 h-4 align-middle select-none">
-                                    <input type="checkbox"
-                                        class="toggle-checkbox-red absolute block w-4 h-4 rounded-full bg-white border-4 border-space appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out" />
-                                    <label
-                                        class="toggle-label-red block overflow-hidden h-4 rounded-full bg-space border border-white/10 cursor-pointer transition-colors duration-200 ease-in-out"></label>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded"
-                                    title="Edit Product"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                            </td>
-                        </tr>
-
+                    <tbody id="product-table-body" class="divide-y divide-white/5 font-mono text-xs">
+                        <!-- Rows rendered by JS -->
                     </tbody>
                 </table>
             </div>
-
-            <div
-                class="p-4 border-t border-white/10 mt-auto bg-space/40 flex justify-between items-center text-xs text-gray-400 font-sans">
-                <p>Showing 3 of 1,204 Products</p>
-                <div class="flex items-center space-x-1 font-sans">
-                    <button
-                        class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-50"
-                        disabled>Prev</button>
-                    <button class="px-3 py-1.5 rounded bg-gold/20 text-gold border border-gold/30">1</button>
-                    <button
-                        class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">2</button>
-                    <button
-                        class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">3</button>
-                    <span class="px-2">...</span>
-                    <button
-                        class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">120</button>
-                    <button
-                        class="px-3 py-1.5 rounded border border-white/10 hover:bg-white/5 transition-colors">Next</button>
-                </div>
-            </div>
-
         </div>
     </section>
 
-    <div id="add-product-modal"
+    <!-- ==================== ADD / EDIT PRODUCT MODAL ==================== -->
+    <div id="product-modal"
         class="fixed inset-0 z-50 flex items-center justify-center bg-space/80 backdrop-blur-sm hidden overflow-y-auto pt-20 pb-10">
         <div
             class="glass-panel rounded-lg w-full max-w-2xl border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] flex flex-col my-auto relative">
 
+            <!-- Modal Header -->
             <div class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg">
-                <h3 class="font-cinzel text-lg text-gold flex items-center tracking-wider">
-                    <i data-lucide="package-plus" class="w-5 h-5 mr-2"></i> Create New Product
+                <h3 id="modal-title" class="font-cinzel text-lg text-gold flex items-center tracking-wider">
+                    <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Add New Product
                 </h3>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-white transition-colors">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
+            <!-- Modal Body -->
             <div class="p-6 space-y-6">
+
+                <!-- Row 1: Name + Base UOM -->
                 <div class="grid grid-cols-2 gap-6">
                     <div class="space-y-2">
                         <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Product
                             Name</label>
-                        <input type="text" placeholder="e.g. Lays Classic 50g"
+                        <input id="m-name" type="text" placeholder='e.g. Mineral Water 500ml'
                             class="w-full bg-space border border-white/10 text-sm text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Item Type</label>
-                        <select id="item-type-selector" onchange="togglePricingVisibility()"
-                            class="w-full bg-space border border-white/10 text-sm text-gold font-semibold rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 cursor-pointer">
-                            <option value="prepackaged" selected>Prepackaged Retail</option>
-                            <option value="raw">Raw Ingredient</option>
-                            <option value="consumable">Consumable</option>
+                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Base UOM</label>
+                        <select id="m-uom"
+                            class="w-full bg-space border border-white/10 text-sm text-gray-300 rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 cursor-pointer">
+                            <option value="Piece">Piece</option>
+                            <option value="Kg">Kg</option>
+                            <option value="Liter">Liter</option>
+                            <option value="Box">Box</option>
+                            <option value="Pack">Pack</option>
                         </select>
                     </div>
                 </div>
 
+                <!-- Row 2: SKU + Supplier -->
                 <div class="grid grid-cols-2 gap-6">
                     <div class="space-y-2">
                         <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">SKU /
                             Barcode</label>
                         <div class="relative">
-                            <input type="text" placeholder="Scan or type barcode..."
-                                class="w-full bg-space border border-white/10 text-sm text-white font-mono rounded-md pl-4 pr-10 py-2 focus:outline-none focus:border-gold/50 transition-all">
-                            <i data-lucide="scan-barcode"
-                                class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 hover:text-gold cursor-pointer"></i>
+                            <input id="m-sku" type="text" placeholder="Scan or enter barcode..."
+                                class="w-full bg-space border border-white/10 text-sm text-white rounded-md px-4 py-2 pr-10 focus:outline-none focus:border-gold/50 transition-all">
+                            <button
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-gold/50 hover:text-gold transition-colors"
+                                title="Scan Barcode">
+                                <i data-lucide="scan-barcode" class="w-5 h-5"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="space-y-2">
-                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Base UOM</label>
-                        <select
+                        <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Supplier</label>
+                        <select id="m-supplier"
                             class="w-full bg-space border border-white/10 text-sm text-gray-300 rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 cursor-pointer">
-                            <option value="piece">Piece (Pc)</option>
-                            <option value="kg">Kilogram (Kg)</option>
-                            <option value="liter">Liter (L)</option>
-                            <option value="pack">Pack / Box</option>
+                            <!-- Populated from suppliers data -->
                         </select>
                     </div>
                 </div>
 
-                <div class="space-y-2 pb-4 border-b border-white/10">
-                    <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Primary
-                        Supplier</label>
-                    <select
-                        class="w-full bg-space border border-white/10 text-sm text-gray-300 rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 cursor-pointer">
-                        <option value="" disabled selected>Select an approved supplier...</option>
-                        <option value="s1">SnackCo Distributors</option>
-                        <option value="s2">Beverage Inc.</option>
-                        <option value="s3">FreshFarms Local</option>
-                        <option value="s4">MeatCo Prime</option>
+                <!-- Row 3: Item Type -->
+                <div class="space-y-2">
+                    <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Item Type</label>
+                    <select id="m-item-type" onchange="toggleRetailPrice()"
+                        class="w-full bg-space border border-white/10 text-sm text-gold font-semibold rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 cursor-pointer">
+                        <option value="Prepackaged">Prepackaged Retail</option>
+                        <option value="Raw Ingredient">Raw Ingredient</option>
+                        <option value="Consumable">Consumable</option>
                     </select>
                 </div>
 
-                <div class="bg-gradient-to-r from-gold/5 to-transparent p-5 rounded border border-gold/20"
-                    id="pricing-container">
-                    <p class="text-sm font-bold text-gold tracking-wide flex items-center mb-4"><i data-lucide="tags"
-                            class="w-4 h-4 mr-2"></i> Pricing & Margin Configuration</p>
-                    <div class="grid grid-cols-3 gap-6 items-end">
+                <!-- Dynamic Pricing Section (visible for Prepackaged) -->
+                <div id="retail-price-section"
+                    class="bg-gradient-to-r from-gold/5 to-transparent p-5 rounded border border-gold/20">
+                    <p class="text-sm font-bold text-gold tracking-wide flex items-center mb-4">
+                        <i data-lucide="calculator" class="w-4 h-4 mr-2"></i> Pricing
+                    </p>
+                    <div class="grid grid-cols-2 gap-6">
                         <div class="space-y-1">
-                            <label class="text-[10px] text-gray-400 uppercase tracking-widest">Cost Price (from
-                                PO)</label>
-                            <div class="relative">
-                                <span
-                                    class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">RM</span>
-                                <input type="number" id="cost-price" placeholder="0.00"
-                                    class="w-full bg-space border border-white/10 text-lg font-mono text-gray-300 rounded-md pl-10 pr-3 py-1.5 focus:outline-none focus:border-gold/50 transition-all text-right"
-                                    oninput="calculateMargin()">
-                            </div>
+                            <label class="text-[10px] text-gray-400 uppercase tracking-widest">Cost Price (RM)</label>
+                            <input id="m-cost" type="number" step="0.01" placeholder="0.00"
+                                class="w-full bg-space border border-white/10 text-sm font-mono text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
                         </div>
-
-                        <div class="space-y-1 transition-opacity duration-300" id="retail-price-group">
-                            <label class="text-[10px] text-gold uppercase tracking-widest font-bold">Retail
-                                Price</label>
-                            <div class="relative">
-                                <span
-                                    class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gold text-sm">RM</span>
-                                <input type="number" id="retail-price" placeholder="0.00"
-                                    class="w-full bg-space border border-gold/30 shadow-inner text-lg font-mono font-bold text-gold rounded-md pl-10 pr-3 py-1.5 focus:outline-none focus:border-gold transition-all text-right"
-                                    oninput="calculateMargin()">
-                            </div>
-                        </div>
-
-                        <div class="space-y-1 transition-opacity duration-300" id="margin-group">
-                            <label class="text-[10px] text-gray-400 uppercase tracking-widest">Margin % (Auto)</label>
-                            <div id="calc-margin-display"
-                                class="w-full bg-space border border-white/5 text-lg font-mono text-white rounded-md px-3 py-1.5 text-center">
-                                -- %</div>
-                        </div>
-
-                        <div id="not-sold-msg"
-                            class="hidden col-span-2 text-xs text-gray-500 italic flex items-center justify-end pb-2">
-                            Raw Ingredients and Consumables are not sold directly. Retail pricing disabled.
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gold uppercase tracking-widest font-bold">Retail Price
+                                (RM)</label>
+                            <input id="m-retail" type="number" step="0.01" placeholder="0.00"
+                                class="w-full bg-space border border-gold/30 text-sm font-mono text-gold rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
                         </div>
                     </div>
+                </div>
+
+                <!-- Cost-only section for non-retail types -->
+                <div id="cost-only-section" class="hidden p-5 rounded border border-white/5 bg-[#010204]">
+                    <p class="text-sm font-bold text-white tracking-wide flex items-center mb-4">
+                        <i data-lucide="receipt" class="w-4 h-4 mr-2 text-gold"></i> Cost
+                    </p>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-400 uppercase tracking-widest">Cost Price (RM)</label>
+                        <input id="m-cost-alt" type="number" step="0.01" placeholder="0.00"
+                            class="w-full bg-space border border-white/10 text-sm font-mono text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
+                    </div>
+                    <p class="text-[10px] text-gray-500 mt-2 italic">
+                        <i data-lucide="info" class="w-3 h-3 inline mr-1"></i> Retail price is not applicable for this
+                        item type.
+                    </p>
                 </div>
 
             </div>
 
-            <div class="p-5 border-t border-white/10 bg-space/80 rounded-b-lg flex items-center justify-between">
-
-                <div class="flex items-center space-x-4 bg-[#010204] px-4 py-2 rounded border border-white/5">
-                    <div
-                        class="relative inline-block w-10 h-5 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="product_status_toggle" id="product_status_toggle"
-                            class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-space appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out"
-                            checked />
-                        <label for="product_status_toggle"
-                            class="toggle-label block overflow-hidden h-5 rounded-full bg-space border border-white/10 cursor-pointer transition-colors duration-200 ease-in-out"></label>
-                    </div>
-                    <div>
-                        <p class="text-sm font-bold text-green-400 tracking-wide" id="status-text">Active</p>
-                    </div>
-                </div>
-
+            <!-- Modal Footer -->
+            <div class="p-5 border-t border-white/10 bg-space/80 rounded-b-lg flex items-center justify-end">
                 <div class="flex space-x-3">
                     <button onclick="closeModal()"
                         class="px-4 py-2 text-sm font-medium rounded text-gray-400 hover:text-white hover:bg-white/5 transition-colors">Cancel</button>
-                    <button
+                    <button onclick="saveProduct()"
                         class="px-6 py-2 text-sm font-bold rounded bg-gold/20 text-gold border border-gold/50 hover:bg-gold hover:text-space transition-all shadow-[0_0_10px_rgba(212,175,55,0.2)]">
                         Save Product
                     </button>
@@ -452,77 +403,286 @@
         </div>
     </div>
 
+    <!-- ==================== SCRIPT ==================== -->
     <script>
-        // Initialize Icons
         lucide.createIcons();
 
-        // Modal Logic
-        const modal = document.getElementById('add-product-modal');
-        function openModal() {
-            modal.classList.remove('hidden');
+        // ── Suppliers Data (simulated from Suppliers table) ──
+        const suppliers = [
+            { id: 'SUP-01', name: 'Cahaya Distributors' },
+            { id: 'SUP-02', name: 'Seri Alam Trading' },
+            { id: 'SUP-03', name: 'Metro F&B Supply Co.' },
+            { id: 'SUP-04', name: 'KL Fresh Imports' },
+            { id: 'SUP-05', name: 'Johor Paper & Pack' },
+        ];
+
+        // ── Product Catalog Data ──
+        let products = [
+            { id: 'PRD-1045', name: 'Mineral Water 500ml', sku: '9556001234567', type: 'Prepackaged', uom: 'Piece', cost: 0.80, retail: 4.00, supplierId: 'SUP-01', active: true },
+            { id: 'PRD-1046', name: 'Craft Cola 330ml', sku: '9556001234890', type: 'Prepackaged', uom: 'Piece', cost: 1.50, retail: 6.50, supplierId: 'SUP-01', active: true },
+            { id: 'PRD-1047', name: 'Artisan Chips 50g', sku: '9556007775432', type: 'Prepackaged', uom: 'Piece', cost: 2.10, retail: 8.90, supplierId: 'SUP-02', active: true },
+            { id: 'PRD-1048', name: 'Organic Granola Bar', sku: '9556003339012', type: 'Prepackaged', uom: 'Piece', cost: 3.20, retail: 12.00, supplierId: 'SUP-04', active: true },
+            { id: 'PRD-1049', name: 'Raw Beef Tenderloin', sku: null, type: 'Raw Ingredient', uom: 'Kg', cost: 42.00, retail: null, supplierId: 'SUP-04', active: true },
+            { id: 'PRD-1050', name: 'Fresh Atlantic Salmon', sku: null, type: 'Raw Ingredient', uom: 'Kg', cost: 58.00, retail: null, supplierId: 'SUP-04', active: true },
+            { id: 'PRD-1051', name: 'Branded Paper Napkins', sku: '9556009998765', type: 'Consumable', uom: 'Pack', cost: 4.50, retail: null, supplierId: 'SUP-05', active: false },
+            { id: 'PRD-1052', name: 'Eco Takeaway Container', sku: '9556009998001', type: 'Consumable', uom: 'Pack', cost: 12.80, retail: null, supplierId: 'SUP-05', active: false },
+            { id: 'PRD-1053', name: 'Cold Brew Coffee 250ml', sku: '9556002224561', type: 'Prepackaged', uom: 'Piece', cost: 4.20, retail: 14.00, supplierId: 'SUP-03', active: true },
+        ];
+
+        let editingIndex = null;
+
+        // ── Utility ──
+        function calcMargin(cost, retail) {
+            if (retail == null || retail === 0 || cost == null) return null;
+            return ((retail - cost) / retail * 100).toFixed(1);
         }
+
+        function getSupplierName(id) {
+            const s = suppliers.find(s => s.id === id);
+            return s ? s.name : '—';
+        }
+
+        function getNextId() {
+            const maxNum = products.reduce((max, p) => {
+                const n = parseInt(p.id.split('-')[1]);
+                return n > max ? n : max;
+            }, 0);
+            return `PRD-${maxNum + 1}`;
+        }
+
+        // ── Type Badge Colors ──
+        function typeBadge(type) {
+            switch (type) {
+                case 'Prepackaged':
+                    return `<span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] border border-blue-500/20 font-sans">${type}</span>`;
+                case 'Raw Ingredient':
+                    return `<span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 text-[10px] border border-amber-500/20 font-sans">${type}</span>`;
+                case 'Consumable':
+                    return `<span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[10px] border border-purple-500/20 font-sans">${type}</span>`;
+                default:
+                    return `<span class="text-gray-400 font-sans">${type}</span>`;
+            }
+        }
+
+        // ── Render Supplier Dropdown (inline) ──
+        function supplierDropdown(product, idx) {
+            let html = `<select class="inline-select text-gray-300" onchange="changeSupplier(${idx}, this.value)">`;
+            suppliers.forEach(s => {
+                const selected = s.id === product.supplierId ? 'selected' : '';
+                html += `<option value="${s.id}" ${selected}>${s.name}</option>`;
+            });
+            html += '</select>';
+            return html;
+        }
+
+        // ── Render Table ──
+        function renderTable() {
+            const tbody = document.getElementById('product-table-body');
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const typeFilter = document.getElementById('filter-type').value;
+            const statusFilter = document.getElementById('filter-status').value;
+
+            let filtered = products.filter(p => {
+                const matchSearch = p.name.toLowerCase().includes(searchVal) ||
+                    p.id.toLowerCase().includes(searchVal) ||
+                    (p.sku && p.sku.includes(searchVal));
+                const matchType = typeFilter === 'all' || p.type === typeFilter;
+                const matchStatus = statusFilter === 'all' ||
+                    (statusFilter === 'Active' && p.active) ||
+                    (statusFilter === 'Discontinued' && !p.active);
+                return matchSearch && matchType && matchStatus;
+            });
+
+            tbody.innerHTML = '';
+
+            filtered.forEach((p, _fi) => {
+                // Find the real index in the products array
+                const idx = products.indexOf(p);
+                const margin = calcMargin(p.cost, p.retail);
+                const isDiscontinued = !p.active;
+
+                const row = document.createElement('tr');
+                row.className = `hover:bg-white/[0.02] transition-colors group ${isDiscontinued ? 'opacity-50' : ''}`;
+
+                row.innerHTML = `
+                    <td class="px-5 py-4">
+                        <span class="bg-space px-2 py-1 rounded border border-white/10 text-gray-400">${p.id}</span>
+                    </td>
+                    <td class="px-5 py-4">
+                        <p class="text-gray-200 font-bold font-sans tracking-wide">${p.name}</p>
+                    </td>
+                    <td class="px-5 py-4 text-gray-400">
+                        ${p.sku ? `<span class="font-mono">${p.sku}</span>` : '<span class="text-gray-600 font-sans italic">N/A</span>'}
+                    </td>
+                    <td class="px-5 py-4">${typeBadge(p.type)}</td>
+                    <td class="px-5 py-4 text-gray-400 font-sans">${p.uom}</td>
+                    <td class="px-5 py-4 text-gray-400">RM ${p.cost.toFixed(2)}</td>
+                    <td class="px-5 py-4 ${p.retail != null ? 'text-gold font-bold text-sm' : 'text-gray-600 font-sans italic'}">
+                        ${p.retail != null ? `RM ${p.retail.toFixed(2)}` : '—'}
+                    </td>
+                    <td class="px-5 py-4">
+                        ${margin != null
+                        ? `<span class="font-orbitron text-sm ${parseFloat(margin) >= 60 ? 'text-green-400' : parseFloat(margin) >= 40 ? 'text-gold' : 'text-red-400'}">${margin}%</span>`
+                        : '<span class="text-gray-600 font-sans italic">—</span>'}
+                    </td>
+                    <td class="px-5 py-4">${supplierDropdown(p, idx)}</td>
+                    <td class="px-5 py-4">
+                        <label class="status-toggle" title="${p.active ? 'Active' : 'Discontinued'}">
+                            <input type="checkbox" ${p.active ? 'checked' : ''} onchange="toggleStatus(${idx}, this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="ml-2 text-[10px] font-sans uppercase tracking-widest ${p.active ? 'text-green-400' : 'text-gray-500'}">${p.active ? 'Active' : 'Off'}</span>
+                    </td>
+                    <td class="px-5 py-4 text-right">
+                        <button onclick="openEditModal(${idx})" class="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded" title="Edit Product">
+                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            lucide.createIcons();
+            updateKPIs();
+        }
+
+        // ── KPIs ──
+        function updateKPIs() {
+            document.getElementById('kpi-total').textContent = products.length;
+            document.getElementById('kpi-active').textContent = products.filter(p => p.active).length;
+            document.getElementById('kpi-prepackaged').textContent = products.filter(p => p.type === 'Prepackaged').length;
+            document.getElementById('kpi-discontinued').textContent = products.filter(p => !p.active).length;
+        }
+
+        // ── Inline Actions ──
+        function changeSupplier(idx, newSupplierId) {
+            products[idx].supplierId = newSupplierId;
+            // In a real system this would also re-fetch Cost Price from POs
+        }
+
+        function toggleStatus(idx, isActive) {
+            products[idx].active = isActive;
+            renderTable();
+        }
+
+        function filterTable() {
+            renderTable();
+        }
+
+        // ── Modal Logic ──
+        const modal = document.getElementById('product-modal');
+
+        function populateSupplierDropdownModal() {
+            const sel = document.getElementById('m-supplier');
+            sel.innerHTML = '';
+            suppliers.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                sel.appendChild(opt);
+            });
+        }
+
+        function toggleRetailPrice() {
+            const type = document.getElementById('m-item-type').value;
+            const retailSection = document.getElementById('retail-price-section');
+            const costOnlySection = document.getElementById('cost-only-section');
+
+            if (type === 'Prepackaged') {
+                retailSection.classList.remove('hidden');
+                costOnlySection.classList.add('hidden');
+            } else {
+                retailSection.classList.add('hidden');
+                costOnlySection.classList.remove('hidden');
+            }
+        }
+
+        function openModal() {
+            editingIndex = null;
+            document.getElementById('modal-title').innerHTML = '<i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Add New Product';
+            document.getElementById('m-name').value = '';
+            document.getElementById('m-uom').value = 'Piece';
+            document.getElementById('m-sku').value = '';
+            document.getElementById('m-item-type').value = 'Prepackaged';
+            document.getElementById('m-cost').value = '';
+            document.getElementById('m-retail').value = '';
+            document.getElementById('m-cost-alt').value = '';
+            populateSupplierDropdownModal();
+            toggleRetailPrice();
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function openEditModal(idx) {
+            editingIndex = idx;
+            const p = products[idx];
+            document.getElementById('modal-title').innerHTML = '<i data-lucide="edit-2" class="w-5 h-5 mr-2"></i> Edit Product — ' + p.id;
+            document.getElementById('m-name').value = p.name;
+            document.getElementById('m-uom').value = p.uom;
+            document.getElementById('m-sku').value = p.sku || '';
+            document.getElementById('m-item-type').value = p.type;
+            populateSupplierDropdownModal();
+            document.getElementById('m-supplier').value = p.supplierId;
+
+            if (p.type === 'Prepackaged') {
+                document.getElementById('m-cost').value = p.cost;
+                document.getElementById('m-retail').value = p.retail || '';
+            } else {
+                document.getElementById('m-cost-alt').value = p.cost;
+            }
+
+            toggleRetailPrice();
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
         function closeModal() {
             modal.classList.add('hidden');
+            editingIndex = null;
         }
 
-        // Logic for Dynamic Pricing Visibility
-        function togglePricingVisibility() {
-            const selector = document.getElementById('item-type-selector').value;
-            const retailGroup = document.getElementById('retail-price-group');
-            const marginGroup = document.getElementById('margin-group');
-            const notSoldMsg = document.getElementById('not-sold-msg');
+        function saveProduct() {
+            const name = document.getElementById('m-name').value.trim();
+            if (!name) { alert('Product name is required.'); return; }
 
-            if (selector === 'prepackaged') {
-                retailGroup.classList.remove('hidden');
-                marginGroup.classList.remove('hidden');
-                notSoldMsg.classList.add('hidden');
+            const uom = document.getElementById('m-uom').value;
+            const sku = document.getElementById('m-sku').value.trim() || null;
+            const type = document.getElementById('m-item-type').value;
+            const supplierId = document.getElementById('m-supplier').value;
+
+            let cost, retail;
+            if (type === 'Prepackaged') {
+                cost = parseFloat(document.getElementById('m-cost').value) || 0;
+                retail = parseFloat(document.getElementById('m-retail').value) || null;
             } else {
-                retailGroup.classList.add('hidden');
-                marginGroup.classList.add('hidden');
-                notSoldMsg.classList.remove('hidden');
+                cost = parseFloat(document.getElementById('m-cost-alt').value) || 0;
+                retail = null;
             }
+
+            if (editingIndex !== null) {
+                // Update existing
+                products[editingIndex].name = name;
+                products[editingIndex].uom = uom;
+                products[editingIndex].sku = sku;
+                products[editingIndex].type = type;
+                products[editingIndex].supplierId = supplierId;
+                products[editingIndex].cost = cost;
+                products[editingIndex].retail = retail;
+            } else {
+                // Create new
+                products.push({
+                    id: getNextId(),
+                    name, sku, type, uom, cost, retail, supplierId,
+                    active: true
+                });
+            }
+
+            closeModal();
+            renderTable();
         }
 
-        // Real-time Margin Calculation
-        function calculateMargin() {
-            const cost = parseFloat(document.getElementById('cost-price').value);
-            const retail = parseFloat(document.getElementById('retail-price').value);
-            const marginDisplay = document.getElementById('calc-margin-display');
-
-            if (!isNaN(cost) && !isNaN(retail) && retail > 0) {
-                const margin = ((retail - cost) / retail) * 100;
-                marginDisplay.textContent = margin.toFixed(1) + ' %';
-
-                // Visual feedback based on healthy margin (> 50%)
-                if (margin > 50) {
-                    marginDisplay.classList.remove('text-red-400');
-                    marginDisplay.classList.add('text-green-400');
-                } else {
-                    marginDisplay.classList.remove('text-green-400');
-                    marginDisplay.classList.add('text-red-400');
-                }
-            } else {
-                marginDisplay.textContent = '-- %';
-                marginDisplay.classList.remove('text-green-400', 'text-red-400');
-                marginDisplay.classList.add('text-white');
-            }
-        }
-
-        // Toggle Status Label Logic
-        const statusToggle = document.getElementById('product_status_toggle');
-        const statusText = document.getElementById('status-text');
-
-        statusToggle.addEventListener('change', function () {
-            if (this.checked) {
-                statusText.textContent = "Active";
-                statusText.classList.remove('text-gray-400');
-                statusText.classList.add('text-green-400');
-            } else {
-                statusText.textContent = "Discontinued";
-                statusText.classList.remove('text-green-400');
-                statusText.classList.add('text-gray-400');
-            }
-        });
+        // ── Init ──
+        renderTable();
     </script>
 </body>
 
