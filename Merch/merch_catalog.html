@@ -260,8 +260,6 @@
                             <th class="px-5 py-4 font-semibold">Item Type</th>
                             <th class="px-5 py-4 font-semibold">Base UOM</th>
                             <th class="px-5 py-4 font-semibold">Cost Price</th>
-                            <th class="px-5 py-4 font-semibold">Retail Price</th>
-                            <th class="px-5 py-4 font-semibold text-gold">Margin %</th>
                             <th class="px-5 py-4 font-semibold">Supplier</th>
                             <th class="px-5 py-4 font-semibold">Status</th>
                             <th class="px-5 py-4 font-semibold text-right">Actions</th>
@@ -342,7 +340,7 @@
                 <!-- Row 3: Item Type -->
                 <div class="space-y-2">
                     <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Item Type</label>
-                    <select id="m-item-type" onchange="toggleRetailPrice()"
+                    <select id="m-item-type"
                         class="w-full bg-space border border-white/10 text-sm text-gold font-semibold rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 cursor-pointer">
                         <option value="Prepackaged">Prepackaged Retail</option>
                         <option value="Raw Ingredient">Raw Ingredient</option>
@@ -350,41 +348,16 @@
                     </select>
                 </div>
 
-                <!-- Dynamic Pricing Section (visible for Prepackaged) -->
-                <div id="retail-price-section"
-                    class="bg-gradient-to-r from-gold/5 to-transparent p-5 rounded border border-gold/20">
-                    <p class="text-sm font-bold text-gold tracking-wide flex items-center mb-4">
-                        <i data-lucide="calculator" class="w-4 h-4 mr-2"></i> Pricing
-                    </p>
-                    <div class="grid grid-cols-2 gap-6">
-                        <div class="space-y-1">
-                            <label class="text-[10px] text-gray-400 uppercase tracking-widest">Cost Price (RM)</label>
-                            <input id="m-cost" type="number" step="0.01" placeholder="0.00"
-                                class="w-full bg-space border border-white/10 text-sm font-mono text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] text-gold uppercase tracking-widest font-bold">Retail Price
-                                (RM)</label>
-                            <input id="m-retail" type="number" step="0.01" placeholder="0.00"
-                                class="w-full bg-space border border-gold/30 text-sm font-mono text-gold rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cost-only section for non-retail types -->
-                <div id="cost-only-section" class="hidden p-5 rounded border border-white/5 bg-[#010204]">
+                <!-- Cost Section -->
+                <div id="cost-only-section" class="p-5 rounded border border-white/5 bg-[#010204]">
                     <p class="text-sm font-bold text-white tracking-wide flex items-center mb-4">
                         <i data-lucide="receipt" class="w-4 h-4 mr-2 text-gold"></i> Cost
                     </p>
                     <div class="space-y-1">
                         <label class="text-[10px] text-gray-400 uppercase tracking-widest">Cost Price (RM)</label>
-                        <input id="m-cost-alt" type="number" step="0.01" placeholder="0.00"
+                        <input id="m-cost" type="number" step="0.01" placeholder="0.00"
                             class="w-full bg-space border border-white/10 text-sm font-mono text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 transition-all">
                     </div>
-                    <p class="text-[10px] text-gray-500 mt-2 italic">
-                        <i data-lucide="info" class="w-3 h-3 inline mr-1"></i> Retail price is not applicable for this
-                        item type.
-                    </p>
                 </div>
 
             </div>
@@ -418,25 +391,20 @@
 
         // ── Product Catalog Data ──
         let products = [
-            { id: 'PRD-1045', name: 'Mineral Water 500ml', sku: '9556001234567', type: 'Prepackaged', uom: 'Piece', cost: 0.80, retail: 4.00, supplierId: 'SUP-01', active: true },
-            { id: 'PRD-1046', name: 'Craft Cola 330ml', sku: '9556001234890', type: 'Prepackaged', uom: 'Piece', cost: 1.50, retail: 6.50, supplierId: 'SUP-01', active: true },
-            { id: 'PRD-1047', name: 'Artisan Chips 50g', sku: '9556007775432', type: 'Prepackaged', uom: 'Piece', cost: 2.10, retail: 8.90, supplierId: 'SUP-02', active: true },
-            { id: 'PRD-1048', name: 'Organic Granola Bar', sku: '9556003339012', type: 'Prepackaged', uom: 'Piece', cost: 3.20, retail: 12.00, supplierId: 'SUP-04', active: true },
-            { id: 'PRD-1049', name: 'Raw Beef Tenderloin', sku: null, type: 'Raw Ingredient', uom: 'Kg', cost: 42.00, retail: null, supplierId: 'SUP-04', active: true },
-            { id: 'PRD-1050', name: 'Fresh Atlantic Salmon', sku: null, type: 'Raw Ingredient', uom: 'Kg', cost: 58.00, retail: null, supplierId: 'SUP-04', active: true },
-            { id: 'PRD-1051', name: 'Branded Paper Napkins', sku: '9556009998765', type: 'Consumable', uom: 'Pack', cost: 4.50, retail: null, supplierId: 'SUP-05', active: false },
-            { id: 'PRD-1052', name: 'Eco Takeaway Container', sku: '9556009998001', type: 'Consumable', uom: 'Pack', cost: 12.80, retail: null, supplierId: 'SUP-05', active: false },
-            { id: 'PRD-1053', name: 'Cold Brew Coffee 250ml', sku: '9556002224561', type: 'Prepackaged', uom: 'Piece', cost: 4.20, retail: 14.00, supplierId: 'SUP-03', active: true },
+            { id: 'PRD-1045', name: 'Mineral Water 500ml', sku: '9556001234567', type: 'Prepackaged', uom: 'Piece', cost: 0.80, supplierId: 'SUP-01', active: true },
+            { id: 'PRD-1046', name: 'Craft Cola 330ml', sku: '9556001234890', type: 'Prepackaged', uom: 'Piece', cost: 1.50, supplierId: 'SUP-01', active: true },
+            { id: 'PRD-1047', name: 'Artisan Chips 50g', sku: '9556007775432', type: 'Prepackaged', uom: 'Piece', cost: 2.10, supplierId: 'SUP-02', active: true },
+            { id: 'PRD-1048', name: 'Organic Granola Bar', sku: '9556003339012', type: 'Prepackaged', uom: 'Piece', cost: 3.20, supplierId: 'SUP-04', active: true },
+            { id: 'PRD-1049', name: 'Raw Beef Tenderloin', sku: null, type: 'Raw Ingredient', uom: 'Kg', cost: 42.00, supplierId: 'SUP-04', active: true },
+            { id: 'PRD-1050', name: 'Fresh Atlantic Salmon', sku: null, type: 'Raw Ingredient', uom: 'Kg', cost: 58.00, supplierId: 'SUP-04', active: true },
+            { id: 'PRD-1051', name: 'Branded Paper Napkins', sku: '9556009998765', type: 'Consumable', uom: 'Pack', cost: 4.50, supplierId: 'SUP-05', active: false },
+            { id: 'PRD-1052', name: 'Eco Takeaway Container', sku: '9556009998001', type: 'Consumable', uom: 'Pack', cost: 12.80, supplierId: 'SUP-05', active: false },
+            { id: 'PRD-1053', name: 'Cold Brew Coffee 250ml', sku: '9556002224561', type: 'Prepackaged', uom: 'Piece', cost: 4.20, supplierId: 'SUP-03', active: true },
         ];
 
         let editingIndex = null;
 
         // ── Utility ──
-        function calcMargin(cost, retail) {
-            if (retail == null || retail === 0 || cost == null) return null;
-            return ((retail - cost) / retail * 100).toFixed(1);
-        }
-
         function getSupplierName(id) {
             const s = suppliers.find(s => s.id === id);
             return s ? s.name : '—';
@@ -498,7 +466,6 @@
             filtered.forEach((p, _fi) => {
                 // Find the real index in the products array
                 const idx = products.indexOf(p);
-                const margin = calcMargin(p.cost, p.retail);
                 const isDiscontinued = !p.active;
 
                 const row = document.createElement('tr');
@@ -517,14 +484,6 @@
                     <td class="px-5 py-4">${typeBadge(p.type)}</td>
                     <td class="px-5 py-4 text-gray-400 font-sans">${p.uom}</td>
                     <td class="px-5 py-4 text-gray-400">RM ${p.cost.toFixed(2)}</td>
-                    <td class="px-5 py-4 ${p.retail != null ? 'text-gold font-bold text-sm' : 'text-gray-600 font-sans italic'}">
-                        ${p.retail != null ? `RM ${p.retail.toFixed(2)}` : '—'}
-                    </td>
-                    <td class="px-5 py-4">
-                        ${margin != null
-                        ? `<span class="font-orbitron text-sm ${parseFloat(margin) >= 60 ? 'text-green-400' : parseFloat(margin) >= 40 ? 'text-gold' : 'text-red-400'}">${margin}%</span>`
-                        : '<span class="text-gray-600 font-sans italic">—</span>'}
-                    </td>
                     <td class="px-5 py-4">${supplierDropdown(p, idx)}</td>
                     <td class="px-5 py-4">
                         <label class="status-toggle" title="${p.active ? 'Active' : 'Discontinued'}">
@@ -583,20 +542,6 @@
             });
         }
 
-        function toggleRetailPrice() {
-            const type = document.getElementById('m-item-type').value;
-            const retailSection = document.getElementById('retail-price-section');
-            const costOnlySection = document.getElementById('cost-only-section');
-
-            if (type === 'Prepackaged') {
-                retailSection.classList.remove('hidden');
-                costOnlySection.classList.add('hidden');
-            } else {
-                retailSection.classList.add('hidden');
-                costOnlySection.classList.remove('hidden');
-            }
-        }
-
         function openModal() {
             editingIndex = null;
             document.getElementById('modal-title').innerHTML = '<i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Add New Product';
@@ -605,10 +550,7 @@
             document.getElementById('m-sku').value = '';
             document.getElementById('m-item-type').value = 'Prepackaged';
             document.getElementById('m-cost').value = '';
-            document.getElementById('m-retail').value = '';
-            document.getElementById('m-cost-alt').value = '';
             populateSupplierDropdownModal();
-            toggleRetailPrice();
             modal.classList.remove('hidden');
             lucide.createIcons();
         }
@@ -623,15 +565,8 @@
             document.getElementById('m-item-type').value = p.type;
             populateSupplierDropdownModal();
             document.getElementById('m-supplier').value = p.supplierId;
+            document.getElementById('m-cost').value = p.cost;
 
-            if (p.type === 'Prepackaged') {
-                document.getElementById('m-cost').value = p.cost;
-                document.getElementById('m-retail').value = p.retail || '';
-            } else {
-                document.getElementById('m-cost-alt').value = p.cost;
-            }
-
-            toggleRetailPrice();
             modal.classList.remove('hidden');
             lucide.createIcons();
         }
@@ -649,15 +584,7 @@
             const sku = document.getElementById('m-sku').value.trim() || null;
             const type = document.getElementById('m-item-type').value;
             const supplierId = document.getElementById('m-supplier').value;
-
-            let cost, retail;
-            if (type === 'Prepackaged') {
-                cost = parseFloat(document.getElementById('m-cost').value) || 0;
-                retail = parseFloat(document.getElementById('m-retail').value) || null;
-            } else {
-                cost = parseFloat(document.getElementById('m-cost-alt').value) || 0;
-                retail = null;
-            }
+            const cost = parseFloat(document.getElementById('m-cost').value) || 0;
 
             if (editingIndex !== null) {
                 // Update existing
@@ -667,12 +594,11 @@
                 products[editingIndex].type = type;
                 products[editingIndex].supplierId = supplierId;
                 products[editingIndex].cost = cost;
-                products[editingIndex].retail = retail;
             } else {
                 // Create new
                 products.push({
                     id: getNextId(),
-                    name, sku, type, uom, cost, retail, supplierId,
+                    name, sku, type, uom, cost, supplierId,
                     active: true
                 });
             }
