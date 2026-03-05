@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demand Forecasts</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Orbitron:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        space: '#020408',
+                        panel: 'rgba(10, 20, 30, 0.7)',
+                        gold: '#d4af37',
+                        bronze: '#806b45',
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        inter: ['Inter', 'sans-serif'],
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.5);
+        }
+
+        .glass-panel {
+            background-color: rgba(10, 20, 30, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            background-color: transparent;
+            color: #e2e8f0;
+        }
+
+        /* Calendar */
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+
+        .cal-cell {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 72px;
+        }
+
+        .cal-cell:hover {
+            border-color: rgba(212, 175, 55, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .cal-cell.selected {
+            border-color: #d4af37;
+            box-shadow: 0 0 16px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+
+        .cap-high {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.06));
+            border-left: 3px solid #ef4444;
+        }
+
+        .cap-opt {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0.06));
+            border-left: 3px solid #d4af37;
+        }
+
+        .cap-low {
+            background: linear-gradient(135deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.03));
+            border-left: 3px solid #475569;
+        }
+
+        /* Hourly row hover */
+        .hour-row {
+            transition: all 0.15s ease;
+        }
+
+        .hour-row:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+            transform: translateX(2px);
+        }
+
+        /* Pulse for today marker */
+        @keyframes pulse-gold {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(212, 175, 55, 0);
+            }
+        }
+
+        .today-pulse {
+            animation: pulse-gold 2s infinite;
+        }
+    </style>
+</head>
+
+<body class="font-inter p-6 space-y-5 h-screen overflow-y-auto pb-24 relative">
+
+    <!-- ═══════════════════ HEADER ═══════════════════ -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
+                <i data-lucide="bar-chart-3" class="w-6 h-6 mr-3"></i> Demand Forecasts
+            </h3>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">30-Day Forward Capacity View</p>
+        </div>
+        <!-- Inline Legend -->
+        <div class="glass-panel rounded-lg px-4 py-2 flex items-center space-x-5 text-[11px] font-mono text-gray-400">
+            <div class="flex items-center space-x-2">
+                <div class="w-2.5 h-2.5 rounded-sm bg-red-500/60"></div><span>&gt;80% High</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-2.5 h-2.5 rounded-sm bg-gold/60"></div><span>40-80% Optimal</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-2.5 h-2.5 rounded-sm bg-slate-500/40"></div><span>&lt;40% Low</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ FORECAST MAP ═══════════════════ -->
+    <div class="glass-panel p-5 rounded-lg">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="text-sm font-cinzel text-gray-300 uppercase tracking-widest flex items-center">
+                <i data-lucide="calendar-days" class="w-4 h-4 mr-2 text-gold/60"></i> Capacity Calendar
+            </h4>
+            <span class="text-xs font-mono text-gold/80 bg-gold/10 px-3 py-1 rounded-full border border-gold/20"
+                id="cal-month-header">MARCH / APRIL</span>
+        </div>
+
+        <!-- Days Header -->
+        <div class="cal-grid mb-1.5 text-center text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+            <div>Sun</div>
+            <div>Mon</div>
+            <div>Tue</div>
+            <div>Wed</div>
+            <div>Thu</div>
+            <div>Fri</div>
+            <div>Sat</div>
+        </div>
+
+        <!-- Calendar Body -->
+        <div id="calendar-grid" class="cal-grid"></div>
+    </div>
+
+    <!-- ═══════════════════ SELECTED DAY DETAIL ═══════════════════ -->
+    <div class="glass-panel rounded-lg overflow-hidden">
+
+        <!-- Day Summary Strip -->
+        <div id="day-summary"
+            class="px-5 py-3.5 border-b border-white/10 bg-space/40 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i data-lucide="clock" class="w-4 h-4 text-gold/60"></i>
+                <h4 class="text-sm font-cinzel text-gray-300 uppercase tracking-widest" id="timeline-title">Select a Day
+                </h4>
+            </div>
+            <div class="flex items-center space-x-6 text-xs font-mono" id="day-kpis">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Hourly Timeline -->
+        <div class="p-5 overflow-y-auto max-h-[420px]" id="hourly-timeline">
+            <div class="text-center text-gray-500 text-sm italic py-12 flex flex-col items-center">
+                <i data-lucide="mouse-pointer-click" class="w-8 h-8 mb-3 text-gray-600"></i>
+                Click any date on the calendar above to see its hourly breakdown.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const TOTAL_DAILY_CAPACITY = 1000;
+        const HOURLY_CAPACITY = 125;
+        const OP_HOURS = ['10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
+
+        let calendarData = [];
+
+        // ── Data Generation (30 Days Forward Only) ──
+        function generateCalendarData() {
+            const today = new Date();
+            const startDay = new Date(today);
+            startDay.setDate(today.getDate() - today.getDay());
+
+            const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            let monthsSpanned = new Set();
+
+            for (let i = 0; i < 35; i++) {
+                const cellDate = new Date(startDay);
+                cellDate.setDate(startDay.getDate() + i);
+                monthsSpanned.add(monthNames[cellDate.getMonth()]);
+
+                const isPast = cellDate.setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0);
+                const isTooFar = Math.floor((cellDate - today) / (1000 * 60 * 60 * 24)) > 30;
+
+                let dailyObj = {
+                    dateObj: cellDate,
+                    dayStr: cellDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+                    weekday: cellDate.toLocaleDateString('en-US', { weekday: 'short' }),
+                    isValid: !isPast && !isTooFar,
+                    total: 0, percent: 0, hourly: []
+                };
+
+                if (dailyObj.isValid) {
+                    let baseDemand = [0, 6].includes(cellDate.getDay()) ? 0.6 : 0.3;
+                    let variance = (Math.random() * 0.5) - 0.15;
+                    let capRatio = Math.max(0.1, Math.min(0.98, baseDemand + variance));
+
+                    dailyObj.total = Math.floor(TOTAL_DAILY_CAPACITY * capRatio);
+                    dailyObj.percent = (dailyObj.total / TOTAL_DAILY_CAPACITY) * 100;
+
+                    let remaining = dailyObj.total;
+                    for (let h = 0; h < OP_HOURS.length; h++) {
+                        let hourWeight = [3, 4, 5].includes(h) ? 0.2 : 0.08;
+                        let hourAmt = h === OP_HOURS.length - 1 ? remaining : Math.floor(dailyObj.total * hourWeight * (0.8 + Math.random() * 0.4));
+                        hourAmt = Math.min(hourAmt, HOURLY_CAPACITY);
+                        remaining -= hourAmt;
+                        dailyObj.hourly.push({
+                            time: OP_HOURS[h],
+                            val: Math.max(0, hourAmt),
+                            pct: (Math.max(0, hourAmt) / HOURLY_CAPACITY) * 100
+                        });
+                    }
+                }
+                calendarData.push(dailyObj);
+            }
+            document.getElementById('cal-month-header').textContent = Array.from(monthsSpanned).join(' / ');
+        }
+
+        // ── Rendering ──
+        function getCapClass(pct) {
+            if (pct >= 80) return 'cap-high';
+            if (pct >= 40) return 'cap-opt';
+            return 'cap-low';
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            let firstValidIndex = -1;
+
+            calendarData.forEach((day, index) => {
+                const cell = document.createElement('div');
+
+                if (!day.isValid) {
+                    cell.className = 'cal-cell bg-white/[0.01] border-white/[0.02] cursor-not-allowed opacity-20';
+                    cell.innerHTML = `<span class="text-[11px] text-gray-600 font-mono">${day.dateObj.getDate()}</span>`;
+                } else {
+                    if (firstValidIndex === -1) firstValidIndex = index;
+                    const isToday = index === firstValidIndex;
+                    const styleClass = getCapClass(day.percent);
+                    const pctRound = Math.round(day.percent);
+
+                    // Badge color
+                    let badgeBg = 'bg-slate-700/60 text-slate-300';
+                    if (pctRound >= 80) badgeBg = 'bg-red-500/20 text-red-400';
+                    else if (pctRound >= 40) badgeBg = 'bg-gold/20 text-gold';
+
+                    cell.className = `cal-cell ${styleClass} group ${isToday ? 'selected' : ''}`;
+                    cell.onclick = () => selectDay(index);
+                    cell.dataset.index = index;
+
+                    cell.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="text-[11px] font-semibold font-mono ${isToday ? 'text-white' : 'text-gray-300'} group-hover:text-white transition-colors">${day.dayStr}</span>
+                            ${isToday ? '<div class="w-2 h-2 rounded-full bg-gold today-pulse"></div>' : ''}
+                        </div>
+                        <div class="flex items-end justify-between mt-auto">
+                            <div class="text-sm font-bold font-mono text-white leading-none">${day.total.toLocaleString()}</div>
+                            <span class="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${badgeBg}">${pctRound}%</span>
+                        </div>
+                    `;
+                }
+                grid.appendChild(cell);
+            });
+
+            // Auto-select today
+            if (firstValidIndex !== -1) {
+                selectDay(firstValidIndex);
+            }
+        }
+
+        function selectDay(index) {
+            document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected'));
+            const targetCell = document.querySelector(`.cal-cell[data-index="${index}"]`);
+            if (targetCell) targetCell.classList.add('selected');
+
+            const dayData = calendarData[index];
+            renderDaySummary(dayData);
+            renderHourlyTimeline(dayData);
+        }
+
+        function renderDaySummary(dayData) {
+            document.getElementById('timeline-title').textContent = `${dayData.weekday}, ${dayData.dayStr}`;
+
+            const kpis = document.getElementById('day-kpis');
+            const pct = Math.round(dayData.percent);
+            const peak = dayData.hourly.reduce((a, b) => a.val > b.val ? a : b, { val: 0, time: '—' });
+
+            let statusColor = 'text-slate-400';
+            let statusLabel = 'Low';
+            if (pct >= 80) { statusColor = 'text-red-400'; statusLabel = 'High'; }
+            else if (pct >= 40) { statusColor = 'text-gold'; statusLabel = 'Optimal'; }
+
+            kpis.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-500">Bookings</span>
+                    <span class="text-white font-bold">${dayData.total.toLocaleString()} <span class="text-gray-600 font-normal">/ 1,000</span></span>
+                </div>
+                <div class="w-px h-4 bg-white/10"></div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-500">Fill</span>
+                    <span class="${statusColor} font-bold">${pct}%</span>
+                    <span class="text-[10px] ${statusColor} bg-white/5 px-1.5 py-0.5 rounded font-semibold">${statusLabel}</span>
+                </div>
+                <div class="w-px h-4 bg-white/10"></div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-500">Peak</span>
+                    <span class="text-white font-bold">${peak.time}</span>
+                </div>
+            `;
+        }
+
+        function renderHourlyTimeline(dayData) {
+            const container = document.getElementById('hourly-timeline');
+            container.innerHTML = '';
+
+            dayData.hourly.forEach((hour, i) => {
+                const p = Math.min(100, hour.pct);
+                let barColor = 'from-slate-600/80 to-slate-500/60';
+                let txtColor = 'text-slate-400';
+                let dotColor = 'bg-slate-500';
+
+                if (p >= 80) { barColor = 'from-red-500 to-red-400'; txtColor = 'text-red-400'; dotColor = 'bg-red-500'; }
+                else if (p >= 40) { barColor = 'from-bronze to-gold'; txtColor = 'text-gold'; dotColor = 'bg-gold'; }
+
+                const row = document.createElement('div');
+                row.className = `hour-row flex items-center space-x-4 px-3 py-2.5 rounded-lg ${i % 2 === 0 ? 'bg-white/[0.01]' : ''} cursor-default`;
+
+                row.innerHTML = `
+                    <div class="w-[72px] flex items-center space-x-2 shrink-0">
+                        <div class="w-1.5 h-1.5 rounded-full ${dotColor} shrink-0"></div>
+                        <span class="text-xs font-semibold text-gray-400 font-mono">${hour.time}</span>
+                    </div>
+                    
+                    <div class="flex-1">
+                        <div class="w-full bg-black/40 rounded-full h-2.5 overflow-hidden border border-white/[0.04] relative">
+                            <div class="bg-gradient-to-r ${barColor} h-full rounded-full transition-all duration-500" style="width: ${p}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="w-[88px] flex items-center justify-end space-x-1.5 shrink-0">
+                        <span class="text-sm font-bold font-mono ${txtColor}">${hour.val}</span>
+                        <span class="text-[10px] text-gray-600 font-mono">/ ${HOURLY_CAPACITY}</span>
+                    </div>
+                    
+                    <div class="w-[44px] text-right shrink-0">
+                        <span class="text-[10px] font-bold font-mono ${txtColor}">${Math.round(p)}%</span>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            generateCalendarData();
+            renderCalendar();
+            lucide.createIcons();
+        });
+    </script>
+</body>
+
+</html>
