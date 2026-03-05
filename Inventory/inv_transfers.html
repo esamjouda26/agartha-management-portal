@@ -134,9 +134,9 @@
                 class="bg-space text-gold border border-gold/50 font-bold px-4 py-2 rounded shadow-[0_0_10px_rgba(212,175,55,0.2)] hover:bg-gold hover:text-space transition-all flex items-center text-xs uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-space disabled:hover:text-gold">
                 <i data-lucide="zap" class="w-4 h-4 mr-2"></i> Fulfill Suggested
             </button>
-            <button onclick="openTransferModal()"
-                class="bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space font-bold px-5 py-2.5 rounded shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.5)] transition-all flex items-center text-sm uppercase tracking-widest">
-                <i data-lucide="plus" class="w-4 h-4 mr-2 fill-space"></i> New Transfer Ticket
+            <button id="btn-multi-transfer" onclick="openTransferModal()" disabled
+                class="bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space font-bold px-5 py-2.5 rounded shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:shadow-[0_0_25px_rgba(212,175,55,0.5)] transition-all flex items-center text-sm uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed disabled:from-space disabled:to-space disabled:border disabled:border-white/10 disabled:text-gray-500 disabled:shadow-none">
+                <i data-lucide="plus" class="w-4 h-4 mr-2 fill-current"></i> New Transfer Ticket
             </button>
         </div>
     </div>
@@ -330,13 +330,9 @@
                 </div>
 
                 <div class="space-y-3 border-t border-white/10 pt-4">
-                    <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Items to Move</label>
-                    <div class="flex items-center space-x-3">
-                        <select id="m-product"
-                            class="flex-1 bg-space border border-white/10 text-sm text-gray-300 rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 cursor-pointer">
-                        </select>
-                        <input id="m-qty" type="number" placeholder="Qty" min="1"
-                            class="w-24 bg-space border border-white/10 text-sm font-mono text-white rounded-md px-4 py-2 focus:outline-none focus:border-gold/50 text-center">
+                    <label class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Items to Move &
+                        Quantities</label>
+                    <div id="m-multi-products" class="max-h-40 overflow-y-auto space-y-2 pr-2">
                     </div>
                 </div>
 
@@ -578,6 +574,7 @@
         function updateButtonState() {
             const anySelected = liveStock.some(i => i.selected);
             document.getElementById('btn-fulfill-suggested').disabled = !anySelected;
+            document.getElementById('btn-multi-transfer').disabled = !anySelected;
         }
 
         function fulfillSuggested() {
@@ -607,14 +604,6 @@
         // ── Modal Logic ──
         const modal = document.getElementById('transfer-modal');
 
-        function populateProducts() {
-            const select = document.getElementById('m-product');
-            select.innerHTML = '';
-            liveStock.forEach(item => {
-                select.innerHTML += `<option value="${item.id}">${item.name} (Avail: ${item.wh})</option>`;
-            });
-        }
-
         function toggleSinkWarning() {
             const dest = document.getElementById('m-destination').value;
             const isSink = dest === 'Cleaning Crew' || dest === 'Health Crew' || dest === 'Prep Waste';
@@ -622,9 +611,32 @@
         }
 
         function openTransferModal(preselectId = null) {
-            populateProducts();
-            if (preselectId) document.getElementById('m-product').value = preselectId;
-            document.getElementById('m-qty').value = '';
+            let itemsToMove = [];
+
+            // If opened from the in-row action
+            if (preselectId) {
+                itemsToMove = [liveStock.find(i => i.id === preselectId)];
+            }
+            // If opened from the top global button
+            else {
+                itemsToMove = liveStock.filter(i => i.selected);
+                if (itemsToMove.length === 0) return;
+            }
+
+            const container = document.getElementById('m-multi-products');
+            container.innerHTML = '';
+
+            // Generate a row with a quantity input for each selected product
+            itemsToMove.forEach(item => {
+                container.innerHTML += `
+                    <div class="flex items-center justify-between bg-space/50 p-2 rounded border border-white/5">
+                        <span class="text-sm text-gray-300 truncate pr-4" title="${item.name}">${item.name} <span class="text-[10px] text-gray-500 ml-1">(Avail: ${item.wh !== null ? item.wh : 'N/A'})</span></span>
+                        <input type="number" placeholder="Qty" min="1" data-id="${item.id}" data-name="${item.name}" 
+                            class="transfer-qty-input w-24 bg-space border border-white/10 text-sm font-mono text-white rounded-md px-2 py-1 focus:outline-none focus:border-gold/50 text-center">
+                    </div>
+                `;
+            });
+
             toggleSinkWarning();
             modal.classList.remove('hidden');
             lucide.createIcons();
@@ -635,32 +647,52 @@
         }
 
         function saveTransfer() {
-            const qty = document.getElementById('m-qty').value;
-            if (!qty || qty < 1) {
-                alert("Please enter a valid quantity.");
+            const source = document.getElementById('m-source').value;
+            const dest = document.getElementById('m-destination').value;
+            const runner = document.getElementById('m-runner').value;
+            const isDirect = runner.includes('Direct Issue');
+
+            const qtyInputs = document.querySelectorAll('.transfer-qty-input');
+            let itemsDesc = [];
+            let hasError = false;
+
+            // Validate and collect all quantities
+            qtyInputs.forEach(input => {
+                const qty = parseInt(input.value);
+                const name = input.getAttribute('data-name');
+
+                if (isNaN(qty) || qty < 1) {
+                    hasError = true;
+                } else {
+                    itemsDesc.push(`${name} (x${qty})`);
+                }
+            });
+
+            if (hasError || itemsDesc.length === 0) {
+                alert("Please enter a valid quantity of 1 or more for all selected items.");
                 return;
             }
 
-            const source = document.getElementById('m-source').value;
-            const dest = document.getElementById('m-destination').value;
-            const productSel = document.getElementById('m-product');
-            const productName = productSel.options[productSel.selectedIndex].text.split(' (')[0];
-            const runner = document.getElementById('m-runner').value;
-
-            const isDirect = runner.includes('Direct Issue');
-
+            // Save as a single ticket with multiple items in the description
             historyLog.unshift({
                 id: 'TRN-' + Math.floor(2044 + Math.random() * 100),
                 time: 'Just now',
                 source: source,
                 dest: dest,
-                items: `${productName} (x${qty})`,
+                items: itemsDesc.join(', '), // Joins multiple items like: "Mineral Water (x5), Craft Cola (x2)"
                 runner: isDirect ? 'Direct Issue' : runner.replace('Runner: ', ''),
                 status: isDirect ? 'Completed' : 'Pending Runner'
             });
 
+            // Unselect rows and refresh UI
+            liveStock.forEach(i => i.selected = false);
+            if (document.getElementById('select-all-live')) {
+                document.getElementById('select-all-live').checked = false;
+            }
+
             closeTransferModal();
             showToast(isDirect ? `Items issued directly to ${dest}. Global stock updated.` : `Transfer ticket dispatched to Runners.`);
+            renderLiveTable();
             renderHistoryTable();
         }
 
