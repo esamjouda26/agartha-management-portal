@@ -234,6 +234,7 @@
                             <th class="px-4 py-4 font-semibold text-center">Vending</th>
                             <th class="px-4 py-4 font-semibold text-center border-r border-white/5">Giftshop</th>
                             <th class="px-4 py-4 font-semibold text-gold">Suggested Transfer</th>
+                            <th class="px-4 py-4 font-semibold text-center">Ledger</th>
                             <th class="px-4 py-4 font-semibold text-right">Actions</th>
                         </tr>
                     </thead>
@@ -364,6 +365,46 @@
         </div>
     </div>
 
+    <div id="ledger-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-space/80 backdrop-blur-sm hidden overflow-y-auto pt-10 pb-10">
+        <div
+            class="glass-panel rounded-lg w-full max-w-4xl border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] flex flex-col my-auto relative">
+            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg">
+                <div>
+                    <h3 id="ledger-title" class="font-cinzel text-lg text-gold flex items-center tracking-wider">
+                        <i data-lucide="history" class="w-5 h-5 mr-2"></i> Item Ledger
+                    </h3>
+                    <p id="ledger-subtitle" class="text-xs text-gray-400 mt-1 uppercase tracking-widest"></p>
+                </div>
+                <button onclick="closeLedgerModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-6">
+                <div class="border border-white/5 rounded overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-xs text-gray-500 uppercase tracking-wider bg-[#010204]">
+                            <tr>
+                                <th class="px-5 py-3 font-semibold">Timestamp</th>
+                                <th class="px-5 py-3 font-semibold text-center">+/-</th>
+                                <th class="px-5 py-3 font-semibold">Transaction Type</th>
+                                <th class="px-5 py-3 font-semibold">Source &rarr; Destination</th>
+                                <th class="px-5 py-3 font-semibold">Runner / User</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledger-table-body" class="divide-y divide-white/5 font-mono text-xs">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="p-5 border-t border-white/10 bg-space/80 rounded-b-lg flex justify-end">
+                <button onclick="closeLedgerModal()"
+                    class="px-6 py-2 text-sm font-medium rounded bg-white/5 text-gray-300 hover:bg-white/10 transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast"
         class="fixed bottom-8 right-8 bg-green-500/20 border border-green-500/40 text-green-400 px-6 py-3 rounded-lg shadow-lg backdrop-blur-sm text-sm font-semibold flex items-center space-x-2 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-50">
         <i data-lucide="check-circle" class="w-5 h-5"></i>
@@ -453,6 +494,11 @@
                         <div class="flex flex-col space-y-1 items-start">
                             ${badges.length > 0 ? badges.join('') : '<span class="text-gray-600 text-[10px] italic">Healthy</span>'}
                         </div>
+                    </td>
+                    <td class="px-4 py-4 text-center">
+                        <button onclick="openLedgerModal('${item.id}')" class="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded transition-colors" title="View Item Ledger">
+                            <i data-lucide="history" class="w-4 h-4"></i>
+                        </button>
                     </td>
                     <td class="px-4 py-4 text-right">
                         <button onclick="openTransferModal('${item.id}')" class="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-400/10 rounded transition-colors" title="Transfer / Issue">
@@ -616,6 +662,73 @@
             closeTransferModal();
             showToast(isDirect ? `Items issued directly to ${dest}. Global stock updated.` : `Transfer ticket dispatched to Runners.`);
             renderHistoryTable();
+        }
+
+        // ── Ledger Modal Logic ──
+        function openLedgerModal(id) {
+            const item = liveStock.find(i => i.id === id);
+            if (!item) return;
+            document.getElementById('ledger-title').innerHTML = `<i data-lucide="history" class="w-5 h-5 mr-2"></i> Ledger: ${item.name}`;
+            document.getElementById('ledger-subtitle').textContent = `ID: ${item.id}`;
+
+            // Mock transaction generator for the selected item
+            const tbody = document.getElementById('ledger-table-body');
+            tbody.innerHTML = '';
+
+            // Generate some random history that makes sense
+            const types = [
+                { type: 'PO Receipt', sign: '+', color: 'text-green-400', dest: 'Warehouse', src: 'External Supplier' },
+                { type: 'Internal Transfer', sign: '-', color: 'text-yellow-400', src: 'Warehouse', dest: 'Café' },
+                { type: 'Issue-to-Consume', sign: '-', color: 'text-blue-400', src: 'Warehouse', dest: 'Cleaning Crew' },
+                { type: 'Reconciliation', sign: '-', color: 'text-red-400', src: 'Café', dest: 'Spoilage / Waste' }
+            ];
+
+            // Always start with a receipt
+            let html = `
+                <tr class="hover:bg-white/[0.02]">
+                    <td class="px-5 py-3 text-gray-400">2026-03-01 08:30 AM</td>
+                    <td class="px-5 py-3 text-center font-bold text-green-400">+150</td>
+                    <td class="px-5 py-3 text-gray-300">PO Receipt</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">External Supplier &rarr; Warehouse</td>
+                    <td class="px-5 py-3 text-gray-500">Runner: Ali K.</td>
+                </tr>
+                <tr class="hover:bg-white/[0.02]">
+                    <td class="px-5 py-3 text-gray-400">2026-03-02 14:15 PM</td>
+                    <td class="px-5 py-3 text-center font-bold text-yellow-400">-30</td>
+                    <td class="px-5 py-3 text-gray-300">Internal Transfer</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">Warehouse &rarr; Café</td>
+                    <td class="px-5 py-3 text-gray-500">Runner: Siti N.</td>
+                </tr>
+            `;
+
+            if (item.vend === null) {
+                html += `
+                <tr class="hover:bg-white/[0.02]">
+                    <td class="px-5 py-3 text-gray-400">2026-03-03 09:00 AM</td>
+                    <td class="px-5 py-3 text-center font-bold text-blue-400">-5</td>
+                    <td class="px-5 py-3 text-gray-300">Issue-to-Consume</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">Warehouse &rarr; Health Crew</td>
+                    <td class="px-5 py-3 text-gray-500">Inventory Mgr</td>
+                </tr>`;
+            } else {
+                html += `
+                <tr class="hover:bg-white/[0.02]">
+                    <td class="px-5 py-3 text-gray-400">2026-03-03 18:45 PM</td>
+                    <td class="px-5 py-3 text-center font-bold text-red-400">-2</td>
+                    <td class="px-5 py-3 text-gray-300">Reconciliation Write-off</td>
+                    <td class="px-5 py-3 text-gray-400 text-xs">Café &rarr; Spoilage</td>
+                    <td class="px-5 py-3 text-gray-500">Inventory Mgr</td>
+                </tr>`;
+            }
+
+            tbody.innerHTML = html;
+
+            document.getElementById('ledger-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeLedgerModal() {
+            document.getElementById('ledger-modal').classList.add('hidden');
         }
 
         function showToast(msg) {
