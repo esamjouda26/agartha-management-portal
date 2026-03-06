@@ -223,7 +223,11 @@
                 { id: 'hr_attendance', label: 'Attendance & Compliance', icon: 'shield-check', title: 'Attendance & Compliance Ledger', file: 'HR/attendance_compliance.html' }
             ],
             compliance_manager: [],
-            operations_manager: []
+            operations_manager: [
+                { id: 'ops_zones', label: 'Zone Telemetry', icon: 'radio-tower', title: 'Zone Telemetry & Capacity Oversight', file: 'Ops/zone_capacity.html' },
+                { id: 'ops_crew', label: 'Crew Deployment', icon: 'radar', title: 'Tactical Crew Deployment & Roster', file: 'Ops/crew_deployment.html' },
+                { id: 'ops_incidents', label: 'Incident & SLA', icon: 'siren', title: 'Global Incident & SLA Monitoring', file: 'Ops/incident_sla.html' }
+            ]
         };
 
         const roleDisplayNames = {

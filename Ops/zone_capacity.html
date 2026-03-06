@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zone Telemetry & Capacity Oversight</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Orbitron:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { space: '#020408', panel: 'rgba(10, 20, 30, 0.7)', gold: '#d4af37', bronze: '#806b45' },
+                    fontFamily: { cinzel: ['Cinzel', 'serif'], inter: ['Inter', 'sans-serif'], orbitron: ['Orbitron', 'sans-serif'], mono: ['Fira Code', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.2);
+            border-radius: 3px
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.5)
+        }
+
+        .glass-panel {
+            background-color: rgba(10, 20, 30, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            background-color: transparent;
+            color: #e2e8f0
+        }
+
+        /* Zone card capacity bar */
+        .capacity-bar-track {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .capacity-bar-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width 1s cubic-bezier(.4, 0, .2, 1), background .5s ease;
+        }
+
+        /* Status pulse dot */
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+        }
+
+        .status-dot::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                box-shadow: 0 0 0 0 currentColor;
+                opacity: 0.6;
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px currentColor;
+                opacity: 0;
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 currentColor;
+                opacity: 0;
+            }
+        }
+
+        .status-green {
+            background: #22c55e;
+            color: #22c55e;
+        }
+
+        .status-amber {
+            background: #f59e0b;
+            color: #f59e0b;
+        }
+
+        .status-red {
+            background: #ef4444;
+            color: #ef4444;
+        }
+
+        .bar-green {
+            background: linear-gradient(90deg, #22c55e, #4ade80);
+        }
+
+        .bar-amber {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        .bar-red {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+
+        /* Collapsible crew roster */
+        .crew-roster {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height .35s cubic-bezier(.4, 0, .2, 1), opacity .25s ease;
+            opacity: 0;
+        }
+
+        .crew-roster.open {
+            max-height: 300px;
+            opacity: 1;
+        }
+
+        /* Roster toggle button */
+        .roster-toggle-icon {
+            transition: transform .25s ease;
+        }
+
+        .roster-toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 4, 8, 0.85);
+            backdrop-filter: blur(6px);
+            overflow-y: auto;
+            padding: 2rem 1rem;
+        }
+
+        .modal-overlay.hidden {
+            display: none
+        }
+
+        /* Live data shimmer */
+        @keyframes shimmer {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .live-value {
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        /* Card entrance animation */
+        @keyframes card-in {
+            from {
+                opacity: 0;
+                transform: translateY(16px) scale(0.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .zone-card {
+            animation: card-in .5s ease forwards;
+        }
+
+        /* Summary stat cards */
+        .stat-card {
+            background: rgba(10, 20, 30, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: .75rem;
+            padding: 1rem 1.25rem;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(212, 175, 55, 0.25);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+
+<body class="font-inter p-6 space-y-6 h-screen overflow-y-auto pb-24 relative">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
+                <i data-lucide="radio-tower" class="w-6 h-6 mr-3"></i> Zone Telemetry & Capacity
+            </h3>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Real-time Guest Throughput Across 12 Agartha
+                Zones</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <!-- Live indicator -->
+            <div class="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/20 rounded-full px-4 py-1.5">
+                <span class="status-dot status-green"></span>
+                <span class="font-orbitron text-[10px] text-emerald-400 tracking-widest uppercase">WebSocket Live</span>
+            </div>
+            <!-- Refresh -->
+            <button onclick="simulateDataRefresh()"
+                class="flex items-center space-x-2 bg-space/80 border border-white/10 hover:border-gold/40 text-gray-300 hover:text-gold font-medium py-2 px-4 rounded-lg transition-all text-sm">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i><span>Refresh</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Stats Row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="stat-card">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Total Guests Park-Wide</p>
+            <p id="stat-total-guests" class="font-orbitron text-2xl text-white live-value">—</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Avg. Zone Load</p>
+            <p id="stat-avg-load" class="font-orbitron text-2xl text-white live-value">—</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Zones at Critical</p>
+            <p id="stat-critical" class="font-orbitron text-2xl text-red-400 live-value">—</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Crew Deployed</p>
+            <p id="stat-crew" class="font-orbitron text-2xl text-gold live-value">—</p>
+        </div>
+    </div>
+
+    <!-- Zone Cards Grid -->
+    <div id="zone-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <!-- Cards injected by JS -->
+    </div>
+
+    <!-- VMS CCTV Modal -->
+    <div id="vms-modal" class="modal-overlay hidden">
+        <div
+            class="glass-panel rounded-lg w-full max-w-3xl border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] my-auto">
+            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg">
+                <h3 class="font-cinzel text-lg text-gold flex items-center tracking-wider">
+                    <i data-lucide="video" class="w-5 h-5 mr-2"></i>
+                    <span id="vms-modal-title">CCTV Feed</span>
+                </h3>
+                <div class="flex items-center gap-3">
+                    <div
+                        class="flex items-center gap-1.5 bg-red-500/10 border border-red-500/25 rounded-full px-3 py-1">
+                        <span class="status-dot status-red" style="width:6px;height:6px"></span>
+                        <span class="font-orbitron text-[9px] text-red-400 tracking-widest uppercase">REC</span>
+                    </div>
+                    <button onclick="closeVmsModal()" class="text-gray-400 hover:text-white transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 space-y-4">
+                <!-- Simulated CCTV viewport -->
+                <div class="relative w-full aspect-video bg-[#050a10] rounded-lg overflow-hidden border border-white/5">
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="text-center space-y-3">
+                            <i data-lucide="video-off" class="w-12 h-12 text-gray-700 mx-auto"></i>
+                            <p class="font-orbitron text-xs text-gray-600 tracking-widest">SECURE STREAM PLACEHOLDER</p>
+                            <p class="text-[10px] text-gray-700">VMS integration requires physical device connectivity
+                            </p>
+                        </div>
+                    </div>
+                    <!-- Overlay HUD -->
+                    <div class="absolute top-3 left-3 flex items-center gap-2">
+                        <span class="font-orbitron text-[10px] text-gold/60 bg-space/60 px-2 py-0.5 rounded"
+                            id="vms-zone-label">ZONE</span>
+                    </div>
+                    <div class="absolute top-3 right-3">
+                        <span class="font-mono text-[10px] text-gray-500 bg-space/60 px-2 py-0.5 rounded"
+                            id="vms-timestamp">00:00:00</span>
+                    </div>
+                    <!-- Scanlines effect -->
+                    <div class="absolute inset-0 pointer-events-none opacity-[0.03]"
+                        style="background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.08) 2px, rgba(255,255,255,0.08) 4px)">
+                    </div>
+                </div>
+                <!-- Feed info bar -->
+                <div class="flex items-center justify-between text-[10px] text-gray-500">
+                    <div class="flex items-center gap-4">
+                        <span class="flex items-center gap-1"><i data-lucide="shield-check"
+                                class="w-3 h-3 text-gold/50"></i> E2E Encrypted</span>
+                        <span class="flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3 text-gold/50"></i>
+                            Single-Stream Session</span>
+                    </div>
+                    <span id="vms-device-id" class="font-mono text-gray-600">CAM-XXXX</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"
+        class="fixed bottom-8 right-8 bg-space border-l-4 border-l-gold border-y border-y-white/10 border-r border-r-white/10 text-white px-6 py-4 rounded-lg shadow-xl backdrop-blur-md text-sm font-semibold flex items-center space-x-3 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-[60]">
+        <i data-lucide="info" class="w-5 h-5 text-gold"></i><span id="toast-msg"></span>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ── ZONE DATA (12 Agartha Zones) ──
+        const ZONES = [
+            { id: 'Z-01', name: 'The Grand Atrium', icon: 'landmark', maxCapacity: 800, cameraId: 'CAM-ATR-01' },
+            { id: 'Z-02', name: 'Crystal Caverns', icon: 'gem', maxCapacity: 500, cameraId: 'CAM-CRY-01' },
+            { id: 'Z-03', name: 'Verdant Canopy', icon: 'trees', maxCapacity: 600, cameraId: 'CAM-VER-01' },
+            { id: 'Z-04', name: 'Obsidian Falls', icon: 'waves', maxCapacity: 450, cameraId: 'CAM-OBS-01' },
+            { id: 'Z-05', name: 'Ember Forge District', icon: 'flame', maxCapacity: 400, cameraId: 'CAM-EMB-01' },
+            { id: 'Z-06', name: 'Azure Depths Aquarium', icon: 'fish', maxCapacity: 550, cameraId: 'CAM-AZU-01' },
+            { id: 'Z-07', name: 'Starlight Amphitheatre', icon: 'star', maxCapacity: 1200, cameraId: 'CAM-STA-01' },
+            { id: 'Z-08', name: 'Twilight Bazaar', icon: 'store', maxCapacity: 700, cameraId: 'CAM-TWI-01' },
+            { id: 'Z-09', name: 'The Labyrinth', icon: 'route', maxCapacity: 350, cameraId: 'CAM-LAB-01' },
+            { id: 'Z-10', name: 'Solstice Gardens', icon: 'flower-2', maxCapacity: 500, cameraId: 'CAM-SOL-01' },
+            { id: 'Z-11', name: 'Ironheart Coliseum', icon: 'swords', maxCapacity: 900, cameraId: 'CAM-IRO-01' },
+            { id: 'Z-12', name: 'Sanctum of Echoes', icon: 'audio-lines', maxCapacity: 300, cameraId: 'CAM-SAN-01' },
+        ];
+
+        // ── CREW ROSTER DATA (simulated from live deployment) ──
+        const CREW_POOL = [
+            'Ahmad R.', 'Chen W.L.', 'Nur Aisyah O.', 'Rajesh K.', 'Irfan Y.', 'Tan S.L.',
+            'Amirul H.', 'Kavitha M.', 'Lee J.H.', 'Fatimah A.', 'Vikram S.', 'Sarah J.',
+            'Hafiz N.', 'Priya D.', 'Zul Faqar', 'Mei Ling C.', 'Arjun S.', 'Nadia I.',
+            'Khairul A.', 'Siti Zara', 'Daniel T.', 'Norliza K.', 'Ravi M.', 'Hana Y.',
+        ];
+
+        const CREW_ROLES = ['Security', 'Service', 'Runner', 'Cleaning', 'Experience', 'F&B', 'Health'];
+
+        // ── STATE ──
+        let zoneData = [];
+
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function generateZoneData() {
+            const shuffledCrew = [...CREW_POOL].sort(() => Math.random() - 0.5);
+            let crewIdx = 0;
+
+            return ZONES.map(zone => {
+                const loadPct = Math.random();
+                let currentGuests;
+                // Create varied distribution: most zones normal, a few high, one or two critical
+                if (loadPct < 0.5) {
+                    currentGuests = randomInt(Math.floor(zone.maxCapacity * 0.3), Math.floor(zone.maxCapacity * 0.65));
+                } else if (loadPct < 0.8) {
+                    currentGuests = randomInt(Math.floor(zone.maxCapacity * 0.7), Math.floor(zone.maxCapacity * 0.88));
+                } else {
+                    currentGuests = randomInt(Math.floor(zone.maxCapacity * 0.9), zone.maxCapacity);
+                }
+
+                // Assign 2-4 crew members per zone
+                const crewCount = randomInt(2, 4);
+                const crew = [];
+                for (let i = 0; i < crewCount; i++) {
+                    crew.push({
+                        name: shuffledCrew[crewIdx % shuffledCrew.length],
+                        role: CREW_ROLES[randomInt(0, CREW_ROLES.length - 1)]
+                    });
+                    crewIdx++;
+                }
+
+                return {
+                    ...zone,
+                    currentGuests,
+                    crew,
+                    pct: Math.round((currentGuests / zone.maxCapacity) * 100)
+                };
+            });
+        }
+
+        function getLoadStatus(pct) {
+            if (pct >= 90) return { label: 'CRITICAL', color: 'red', barClass: 'bar-red', dotClass: 'status-red', textClass: 'text-red-400', bgClass: 'bg-red-500/5 border-red-500/20' };
+            if (pct >= 70) return { label: 'ELEVATED', color: 'amber', barClass: 'bar-amber', dotClass: 'status-amber', textClass: 'text-amber-400', bgClass: 'bg-amber-500/5 border-amber-500/20' };
+            return { label: 'NORMAL', color: 'green', barClass: 'bar-green', dotClass: 'status-green', textClass: 'text-emerald-400', bgClass: 'bg-emerald-500/5 border-emerald-500/20' };
+        }
+
+        function renderZoneCards() {
+            const grid = document.getElementById('zone-grid');
+            grid.innerHTML = '';
+
+            zoneData.forEach((zone, index) => {
+                const status = getLoadStatus(zone.pct);
+                const card = document.createElement('div');
+                card.className = `zone-card glass-panel rounded-xl p-0 overflow-hidden flex flex-col`;
+                card.style.animationDelay = `${index * 0.05}s`;
+                card.style.opacity = '0';
+
+                const crewRows = zone.crew.map(c => `
+                    <div class="flex items-center justify-between py-1.5 border-b border-white/[0.03] last:border-0">
+                        <div class="flex items-center gap-2">
+                            <div class="w-5 h-5 rounded-full bg-space border border-white/10 flex items-center justify-center">
+                                <i data-lucide="user" class="w-2.5 h-2.5 text-gray-500"></i>
+                            </div>
+                            <span class="text-xs text-gray-300">${c.name}</span>
+                        </div>
+                        <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wider">${c.role}</span>
+                    </div>
+                `).join('');
+
+                card.innerHTML = `
+                    <!-- Card Header -->
+                    <div class="px-4 pt-4 pb-3 flex items-start justify-between">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-lg bg-space/80 border border-white/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="${zone.icon}" class="w-4 h-4 text-gold/70"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-semibold text-white truncate">${zone.name}</h4>
+                                <p class="font-mono text-[10px] text-gray-600">${zone.id}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+                            <span class="status-dot ${status.dotClass}" style="width:6px;height:6px"></span>
+                            <span class="text-[9px] font-bold uppercase tracking-widest ${status.textClass}">${status.label}</span>
+                        </div>
+                    </div>
+
+                    <!-- Capacity Display -->
+                    <div class="px-4 pb-3 space-y-2">
+                        <div class="flex items-baseline justify-between">
+                            <div>
+                                <span class="font-orbitron text-2xl font-bold ${status.textClass} live-value">${zone.currentGuests.toLocaleString()}</span>
+                                <span class="text-gray-600 text-sm mx-1">/</span>
+                                <span class="font-orbitron text-sm text-gray-500">${zone.maxCapacity.toLocaleString()}</span>
+                            </div>
+                            <span class="font-orbitron text-lg font-bold ${status.textClass}">${zone.pct}%</span>
+                        </div>
+                        <div class="capacity-bar-track">
+                            <div class="capacity-bar-fill ${status.barClass}" style="width: ${zone.pct}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Action Bar -->
+                    <div class="px-4 py-2.5 border-t border-white/[0.04] flex items-center justify-between bg-space/30">
+                        <button onclick="toggleRoster('roster-${zone.id}')" class="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-gold transition-colors uppercase tracking-widest font-semibold group">
+                            <i data-lucide="users" class="w-3 h-3"></i>
+                            <span>Crew (${zone.crew.length})</span>
+                            <i data-lucide="chevron-down" class="w-3 h-3 roster-toggle-icon" id="icon-roster-${zone.id}"></i>
+                        </button>
+                        <button onclick="openVmsModal('${zone.id}', '${zone.name}', '${zone.cameraId}')"
+                            class="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-gold transition-colors uppercase tracking-widest font-semibold">
+                            <i data-lucide="cctv" class="w-3 h-3"></i>
+                            <span>VMS Feed</span>
+                        </button>
+                    </div>
+
+                    <!-- Crew Roster (Collapsible) -->
+                    <div class="crew-roster px-4 bg-space/20" id="roster-${zone.id}">
+                        <div class="py-2.5 space-y-0.5">
+                            <div class="flex items-center gap-1.5 mb-2">
+                                <i data-lucide="shield" class="w-3 h-3 text-gold/40"></i>
+                                <span class="text-[9px] text-gold/60 font-cinzel uppercase tracking-widest">Deployed Personnel</span>
+                            </div>
+                            ${crewRows}
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            lucide.createIcons();
+            updateSummaryStats();
+        }
+
+        function updateSummaryStats() {
+            const totalGuests = zoneData.reduce((s, z) => s + z.currentGuests, 0);
+            const avgLoad = Math.round(zoneData.reduce((s, z) => s + z.pct, 0) / zoneData.length);
+            const critical = zoneData.filter(z => z.pct >= 90).length;
+            const totalCrew = zoneData.reduce((s, z) => s + z.crew.length, 0);
+
+            document.getElementById('stat-total-guests').textContent = totalGuests.toLocaleString();
+            document.getElementById('stat-avg-load').textContent = avgLoad + '%';
+            document.getElementById('stat-critical').textContent = critical;
+            document.getElementById('stat-crew').textContent = totalCrew;
+        }
+
+        // ── CREW ROSTER TOGGLE ──
+        function toggleRoster(rosterId) {
+            const el = document.getElementById(rosterId);
+            const icon = document.getElementById('icon-' + rosterId);
+            if (!el) return;
+            el.classList.toggle('open');
+            if (icon) icon.classList.toggle('rotated');
+        }
+
+        // ── VMS MODAL ──
+        function openVmsModal(zoneId, zoneName, cameraId) {
+            document.getElementById('vms-modal-title').textContent = `CCTV — ${zoneName}`;
+            document.getElementById('vms-zone-label').textContent = zoneId;
+            document.getElementById('vms-device-id').textContent = cameraId;
+            document.getElementById('vms-modal').classList.remove('hidden');
+            updateVmsTimestamp();
+            showToast(`Initializing secure VMS stream for ${zoneName}...`);
+        }
+
+        function closeVmsModal() {
+            document.getElementById('vms-modal').classList.add('hidden');
+        }
+
+        function updateVmsTimestamp() {
+            const now = new Date();
+            const ts = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kuala_Lumpur', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('vms-timestamp').textContent = ts + ' MYT';
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('vms-modal').addEventListener('click', function (e) {
+            if (e.target === this) closeVmsModal();
+        });
+
+        // ── DATA REFRESH (simulates WebSocket push) ──
+        function simulateDataRefresh() {
+            zoneData = generateZoneData();
+            renderZoneCards();
+            showToast('Telemetry data refreshed from RFID gateway.');
+        }
+
+        // Periodic micro-updates to simulate live WebSocket data (small fluctuations)
+        setInterval(() => {
+            zoneData.forEach(zone => {
+                const delta = randomInt(-8, 8);
+                zone.currentGuests = Math.max(0, Math.min(zone.maxCapacity, zone.currentGuests + delta));
+                zone.pct = Math.round((zone.currentGuests / zone.maxCapacity) * 100);
+            });
+
+            // Update only the numeric values and bars without full re-render
+            const cards = document.querySelectorAll('.zone-card');
+            cards.forEach((card, i) => {
+                if (!zoneData[i]) return;
+                const zone = zoneData[i];
+                const status = getLoadStatus(zone.pct);
+
+                const countEl = card.querySelector('.live-value');
+                if (countEl) {
+                    countEl.textContent = zone.currentGuests.toLocaleString();
+                    countEl.className = `font-orbitron text-2xl font-bold ${status.textClass} live-value`;
+                }
+
+                const pctEl = card.querySelectorAll('.font-orbitron.text-lg');
+                if (pctEl.length) {
+                    pctEl[0].textContent = zone.pct + '%';
+                    pctEl[0].className = `font-orbitron text-lg font-bold ${status.textClass}`;
+                }
+
+                const barFill = card.querySelector('.capacity-bar-fill');
+                if (barFill) {
+                    barFill.style.width = zone.pct + '%';
+                    barFill.className = `capacity-bar-fill ${status.barClass}`;
+                }
+
+                // Update status dot and label
+                const dotEl = card.querySelector('.status-dot');
+                if (dotEl) {
+                    dotEl.className = `status-dot ${status.dotClass}`;
+                    dotEl.style.width = '6px';
+                    dotEl.style.height = '6px';
+                }
+                const labelEl = dotEl?.nextElementSibling;
+                if (labelEl) {
+                    labelEl.textContent = status.label;
+                    labelEl.className = `text-[9px] font-bold uppercase tracking-widest ${status.textClass}`;
+                }
+            });
+
+            updateSummaryStats();
+            updateVmsTimestamp();
+        }, 3000);
+
+        // ── TOAST ──
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            t.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                t.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+                t.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
+        }
+
+        // ── INIT ──
+        zoneData = generateZoneData();
+        renderZoneCards();
+    </script>
+</body>
+
+</html>

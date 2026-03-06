@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactical Crew Deployment & Roster</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Orbitron:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { space: '#020408', panel: 'rgba(10, 20, 30, 0.7)', gold: '#d4af37', bronze: '#806b45' },
+                    fontFamily: { cinzel: ['Cinzel', 'serif'], inter: ['Inter', 'sans-serif'], orbitron: ['Orbitron', 'sans-serif'], mono: ['Fira Code', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.15);
+            border-radius: 3px
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.4)
+        }
+
+        body {
+            background-color: transparent;
+            color: #e2e8f0
+        }
+
+        .glass-panel {
+            background-color: rgba(10, 20, 30, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* ── Crew Node ── */
+        .crew-node {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .5rem .7rem;
+            border-radius: .5rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(6, 12, 20, 0.7);
+            transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .crew-node:active {
+            cursor: grabbing;
+        }
+
+        .crew-node:hover {
+            border-color: rgba(212, 175, 55, 0.25);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .crew-node.dragging {
+            opacity: 0.4;
+            transform: scale(0.95);
+        }
+
+        /* Manager node (locked) */
+        .manager-node {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .5rem .7rem;
+            border-radius: .5rem;
+            border: 1px solid rgba(212, 175, 55, 0.12);
+            background: rgba(212, 175, 55, 0.04);
+            cursor: default;
+            user-select: none;
+        }
+
+        /* Drop zone highlighting */
+        .drop-zone {
+            transition: background .2s ease, border-color .2s ease;
+            min-height: 60px;
+        }
+
+        .drop-zone.drag-over {
+            background: rgba(212, 175, 55, 0.06) !important;
+            border-color: rgba(212, 175, 55, 0.35) !important;
+            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+
+        /* Badge styles */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: .55rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: .15rem .45rem;
+            border-radius: 9999px;
+            border: 1px solid;
+            white-space: nowrap;
+        }
+
+        .badge-manager {
+            background: rgba(212, 175, 55, 0.1);
+            color: #d4af37;
+            border-color: rgba(212, 175, 55, 0.25);
+        }
+
+        .badge-crew {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            border-color: rgba(96, 165, 250, 0.25);
+        }
+
+        .badge-security {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+
+        .badge-runner {
+            background: rgba(168, 85, 247, 0.1);
+            color: #c084fc;
+            border-color: rgba(168, 85, 247, 0.25);
+        }
+
+        .badge-fnb {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.25);
+        }
+
+        .badge-service {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            border-color: rgba(34, 197, 94, 0.25);
+        }
+
+        .badge-cleaning {
+            background: rgba(45, 212, 191, 0.1);
+            color: #2dd4bf;
+            border-color: rgba(45, 212, 191, 0.25);
+        }
+
+        .badge-health {
+            background: rgba(244, 114, 182, 0.1);
+            color: #f472b6;
+            border-color: rgba(244, 114, 182, 0.25);
+        }
+
+        .badge-experience {
+            background: rgba(129, 140, 248, 0.1);
+            color: #818cf8;
+            border-color: rgba(129, 140, 248, 0.25);
+        }
+
+        .badge-maintenance {
+            background: rgba(251, 146, 60, 0.1);
+            color: #fb923c;
+            border-color: rgba(251, 146, 60, 0.25);
+        }
+
+        .badge-giftshop {
+            background: rgba(232, 121, 249, 0.1);
+            color: #e879f9;
+            border-color: rgba(232, 121, 249, 0.25);
+        }
+
+        /* Status indicators */
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .status-dot::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                box-shadow: 0 0 0 0 currentColor;
+                opacity: 0.6
+            }
+
+            70% {
+                box-shadow: 0 0 0 5px currentColor;
+                opacity: 0
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 currentColor;
+                opacity: 0
+            }
+        }
+
+        .dot-online {
+            background: #22c55e;
+            color: #22c55e;
+        }
+
+        .dot-busy {
+            background: #f59e0b;
+            color: #f59e0b;
+        }
+
+        .dot-offline {
+            background: #6b7280;
+            color: #6b7280;
+        }
+
+        /* Lock icon on manager nodes */
+        .lock-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        /* Zone column */
+        .zone-column {
+            min-width: 0;
+        }
+
+        /* Action buttons on nodes */
+        .node-action {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #6b7280;
+            cursor: pointer;
+            transition: all .15s ease;
+            flex-shrink: 0;
+        }
+
+        .node-action:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            color: #d4af37;
+            background: rgba(212, 175, 55, 0.08);
+        }
+
+        /* Toast */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 4, 8, 0.85);
+            backdrop-filter: blur(6px);
+            overflow-y: auto;
+            padding: 2rem 1rem;
+        }
+
+        .modal-overlay.hidden {
+            display: none
+        }
+
+        /* Reassignment flash */
+        @keyframes reassign-flash {
+            0% {
+                background: rgba(212, 175, 55, 0.15);
+            }
+
+            100% {
+                background: rgba(6, 12, 20, 0.7);
+            }
+        }
+
+        .reassigned {
+            animation: reassign-flash .8s ease;
+        }
+
+        /* Available pool empty state */
+        .empty-pool {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            color: #374151;
+        }
+    </style>
+</head>
+
+<body class="font-inter p-6 space-y-5 h-screen overflow-y-auto pb-24 relative">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
+                <i data-lucide="radar" class="w-6 h-6 mr-3"></i> Tactical Crew Deployment
+            </h3>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Live Duty Board — Drag & Drop Reassignment
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/20 rounded-full px-4 py-1.5">
+                <span class="status-dot dot-online" style="width:6px;height:6px"></span>
+                <span class="font-orbitron text-[10px] text-emerald-400 tracking-widest uppercase">Live Roster</span>
+            </div>
+            <div class="flex items-center gap-1 bg-space/60 border border-white/10 rounded-lg px-3 py-1.5">
+                <i data-lucide="filter" class="w-3.5 h-3.5 text-gray-500"></i>
+                <select id="filter-role" class="bg-transparent text-xs text-gray-300 focus:outline-none cursor-pointer"
+                    onchange="applyFilters()">
+                    <option value="all">All Roles</option>
+                    <option value="security_crew">Security</option>
+                    <option value="service_crew">Service</option>
+                    <option value="fnb_crew">F&B Crew</option>
+                    <option value="runner_crew">Runner</option>
+                    <option value="cleaning_crew">Cleaning</option>
+                    <option value="health_crew">Health</option>
+                    <option value="experience_crew">Experience</option>
+                    <option value="giftshop_crew">Giftshop</option>
+                    <option value="internal_maintainence_crew">Maintenance</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-1 bg-space/60 border border-white/10 rounded-lg px-3 py-1.5">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-gray-500"></i>
+                <input type="text" id="search-crew" placeholder="Search crew..."
+                    class="bg-transparent text-xs text-gray-300 focus:outline-none w-28 placeholder-gray-600"
+                    oninput="applyFilters()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Bar -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div class="bg-space/40 border border-white/5 rounded-lg px-4 py-3">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Total Active</p>
+            <p id="stat-total" class="font-orbitron text-xl text-white">—</p>
+        </div>
+        <div class="bg-space/40 border border-white/5 rounded-lg px-4 py-3">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Deployed</p>
+            <p id="stat-deployed" class="font-orbitron text-xl text-emerald-400">—</p>
+        </div>
+        <div class="bg-space/40 border border-white/5 rounded-lg px-4 py-3">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Available Pool</p>
+            <p id="stat-available" class="font-orbitron text-xl text-amber-400">—</p>
+        </div>
+        <div class="bg-space/40 border border-white/5 rounded-lg px-4 py-3">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Managers Online</p>
+            <p id="stat-managers" class="font-orbitron text-xl text-gold">—</p>
+        </div>
+        <div class="bg-space/40 border border-white/5 rounded-lg px-4 py-3">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Overrides Today</p>
+            <p id="stat-overrides" class="font-orbitron text-xl text-purple-400">0</p>
+        </div>
+    </div>
+
+    <!-- Split-Pane Board -->
+    <div class="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+
+        <!-- LEFT: Available / Unassigned Crew Pool -->
+        <div class="glass-panel rounded-xl flex flex-col w-full lg:w-80 xl:w-96 flex-shrink-0 overflow-hidden">
+            <div class="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between bg-space/30">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="inbox" class="w-4 h-4 text-amber-400"></i>
+                    <span class="font-cinzel text-xs text-gold uppercase tracking-widest">Available Crew</span>
+                </div>
+                <span id="pool-count" class="font-mono text-[10px] text-gray-500">0 members</span>
+            </div>
+            <div id="available-pool" class="drop-zone flex-1 overflow-y-auto p-3 space-y-2" data-zone="available">
+                <!-- Available crew nodes injected here -->
+            </div>
+        </div>
+
+        <!-- RIGHT: Active Deployment by Zone -->
+        <div class="flex-1 overflow-y-auto space-y-3 pr-1">
+            <div class="flex items-center gap-2 mb-1 px-1">
+                <i data-lucide="map-pin" class="w-4 h-4 text-gold/60"></i>
+                <span class="font-cinzel text-xs text-gold uppercase tracking-widest">Active Deployment by Zone</span>
+            </div>
+            <div id="zone-columns" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                <!-- Zone columns injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Reassignment Confirmation Modal -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div
+            class="glass-panel rounded-lg w-full max-w-md border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] my-auto">
+            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg">
+                <h3 class="font-cinzel text-base text-gold flex items-center tracking-wider">
+                    <i data-lucide="arrow-right-left" class="w-4 h-4 mr-2"></i> Confirm Reassignment
+                </h3>
+                <button onclick="closeConfirmModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div class="bg-space/60 rounded-lg p-4 border border-white/5 space-y-3">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-8 h-8 rounded-full bg-space border border-white/10 flex items-center justify-center">
+                            <i data-lucide="user" class="w-4 h-4 text-gray-400"></i>
+                        </div>
+                        <div>
+                            <p id="confirm-name" class="text-sm text-white font-medium">—</p>
+                            <p id="confirm-role" class="text-[10px] text-gray-500 uppercase tracking-wider">—</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                        <span id="confirm-from"
+                            class="bg-red-500/10 text-red-400 border border-red-500/20 rounded px-2 py-1">—</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-gold"></i>
+                        <span id="confirm-to"
+                            class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded px-2 py-1">—</span>
+                    </div>
+                </div>
+                <div
+                    class="flex items-center gap-2 text-[10px] text-amber-400 bg-amber-400/5 border border-amber-400/20 rounded px-3 py-2">
+                    <i data-lucide="database" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                    <span>This will POST to <span class="font-mono">daily_shift_overrides</span> and push a WebSocket
+                        notification to the crew member's device.</span>
+                </div>
+                <div class="flex justify-end gap-3 pt-2 border-t border-white/10">
+                    <button onclick="closeConfirmModal()"
+                        class="px-4 py-2 text-xs font-medium rounded text-gray-400 hover:text-white transition-colors">Cancel</button>
+                    <button onclick="executeReassignment()"
+                        class="px-5 py-2 text-xs font-bold rounded bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space shadow-[0_0_15px_rgba(212,175,55,0.3)] transition-all">
+                        Confirm & Deploy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"
+        class="fixed bottom-8 right-8 bg-space border-l-4 border-l-gold border-y border-y-white/10 border-r border-r-white/10 text-white px-6 py-4 rounded-lg shadow-xl backdrop-blur-md text-sm font-semibold flex items-center space-x-3 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-[60]">
+        <i data-lucide="info" class="w-5 h-5 text-gold"></i><span id="toast-msg"></span>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ══════════════════════════════════════════
+        //  DATA MODEL
+        // ══════════════════════════════════════════
+
+        const ZONES = [
+            { id: 'Z-01', name: 'The Grand Atrium', icon: 'landmark' },
+            { id: 'Z-02', name: 'Crystal Caverns', icon: 'gem' },
+            { id: 'Z-03', name: 'Verdant Canopy', icon: 'trees' },
+            { id: 'Z-04', name: 'Obsidian Falls', icon: 'waves' },
+            { id: 'Z-05', name: 'Ember Forge District', icon: 'flame' },
+            { id: 'Z-06', name: 'Azure Depths Aquarium', icon: 'fish' },
+            { id: 'Z-07', name: 'Starlight Amphitheatre', icon: 'star' },
+            { id: 'Z-08', name: 'Twilight Bazaar', icon: 'store' },
+            { id: 'Z-09', name: 'The Labyrinth', icon: 'route' },
+            { id: 'Z-10', name: 'Solstice Gardens', icon: 'flower-2' },
+            { id: 'Z-11', name: 'Ironheart Coliseum', icon: 'swords' },
+            { id: 'Z-12', name: 'Sanctum of Echoes', icon: 'audio-lines' },
+        ];
+
+        const ROLE_META = {
+            fnb_manager: { label: 'F&B Manager', tier: 'manager', badge: 'badge-manager', icon: 'utensils', radioFreq: 'CH-04' },
+            merch_manager: { label: 'Merch Manager', tier: 'manager', badge: 'badge-manager', icon: 'package', radioFreq: 'CH-05' },
+            maintenance_manager: { label: 'Maintenance Mgr', tier: 'manager', badge: 'badge-manager', icon: 'wrench', radioFreq: 'CH-06' },
+            inventory_manager: { label: 'Inventory Mgr', tier: 'manager', badge: 'badge-manager', icon: 'layers', radioFreq: 'CH-07' },
+            marketing_manager: { label: 'Marketing Mgr', tier: 'manager', badge: 'badge-manager', icon: 'trending-up', radioFreq: 'CH-08' },
+            human_resources_manager: { label: 'HR Manager', tier: 'manager', badge: 'badge-manager', icon: 'users', radioFreq: 'CH-09' },
+            compliance_manager: { label: 'Compliance Mgr', tier: 'manager', badge: 'badge-manager', icon: 'shield-check', radioFreq: 'CH-10' },
+            operations_manager: { label: 'Operations Mgr', tier: 'manager', badge: 'badge-manager', icon: 'radar', radioFreq: 'CH-01' },
+            fnb_crew: { label: 'F&B Crew', tier: 'crew', badge: 'badge-fnb', icon: 'utensils' },
+            service_crew: { label: 'Service Crew', tier: 'crew', badge: 'badge-service', icon: 'headset' },
+            giftshop_crew: { label: 'Giftshop Crew', tier: 'crew', badge: 'badge-giftshop', icon: 'gift' },
+            runner_crew: { label: 'Runner Crew', tier: 'crew', badge: 'badge-runner', icon: 'zap' },
+            security_crew: { label: 'Security Crew', tier: 'crew', badge: 'badge-security', icon: 'shield' },
+            health_crew: { label: 'Health Crew', tier: 'crew', badge: 'badge-health', icon: 'heart-pulse' },
+            cleaning_crew: { label: 'Cleaning Crew', tier: 'crew', badge: 'badge-cleaning', icon: 'sparkles' },
+            experience_crew: { label: 'Experience Crew', tier: 'crew', badge: 'badge-experience', icon: 'wand-2' },
+            internal_maintainence_crew: { label: 'Maintenance Crew', tier: 'crew', badge: 'badge-maintenance', icon: 'hammer' },
+        };
+
+        // Simulated active personnel roster
+        const PERSONNEL = [
+            // ── MANAGERS (pinned, non-draggable) ──
+            { id: 'EMP-3K4L5M6N', name: 'Tan Siew Ling', role: 'fnb_manager', zone: 'Z-08', status: 'online' },
+            { id: 'EMP-4E5F6G7H', name: 'Vikram Singh', role: 'operations_manager', zone: 'Z-01', status: 'online' },
+            { id: 'EMP-MN01OP23', name: 'Lim Chen Yee', role: 'maintenance_manager', zone: 'Z-05', status: 'online' },
+            { id: 'EMP-QR45ST67', name: 'Norazlina binti Samad', role: 'merch_manager', zone: 'Z-08', status: 'busy' },
+            { id: 'EMP-UV89WX01', name: 'Dato Harun Ibrahim', role: 'compliance_manager', zone: 'Z-01', status: 'online' },
+            { id: 'EMP-YZ23AB45', name: 'Deepa Narayanan', role: 'human_resources_manager', zone: 'Z-07', status: 'online' },
+
+            // ── CREW (draggable) — Deployed ──
+            { id: 'EMP-8F2A3B91', name: 'Ahmad Razif', role: 'fnb_crew', zone: 'Z-08', status: 'online' },
+            { id: 'EMP-1D4E6F78', name: 'Chen Wei Lin', role: 'security_crew', zone: 'Z-01', status: 'online' },
+            { id: 'EMP-9A2B3C4D', name: 'Nur Aisyah', role: 'giftshop_crew', zone: 'Z-08', status: 'online' },
+            { id: 'EMP-5E6F7A8B', name: 'Rajesh Krishnan', role: 'health_crew', zone: 'Z-11', status: 'online' },
+            { id: 'EMP-7G8H9I0J', name: 'Irfan Yusof', role: 'internal_maintainence_crew', zone: 'Z-05', status: 'online' },
+            { id: 'EMP-8O9P0Q1R', name: 'Amirul Hakim', role: 'security_crew', zone: 'Z-01', status: 'online' },
+            { id: 'EMP-0A1B2C3D', name: 'Fatimah Abdullah', role: 'cleaning_crew', zone: 'Z-03', status: 'online' },
+            { id: 'EMP-CD12EF34', name: 'Hafiz Nazri', role: 'runner_crew', zone: 'Z-02', status: 'online' },
+            { id: 'EMP-GH56IJ78', name: 'Priya Devi', role: 'service_crew', zone: 'Z-07', status: 'online' },
+            { id: 'EMP-KL90MN12', name: 'Zul Faqar', role: 'experience_crew', zone: 'Z-09', status: 'busy' },
+            { id: 'EMP-OP34QR56', name: 'Mei Ling Chong', role: 'fnb_crew', zone: 'Z-06', status: 'online' },
+            { id: 'EMP-ST78UV90', name: 'Arjun Suresh', role: 'security_crew', zone: 'Z-11', status: 'online' },
+            { id: 'EMP-WX12YZ34', name: 'Nadia Ismail', role: 'cleaning_crew', zone: 'Z-04', status: 'online' },
+            { id: 'EMP-AB56CD78', name: 'Khairul Anuar', role: 'runner_crew', zone: 'Z-10', status: 'online' },
+            { id: 'EMP-EF90GH12', name: 'Siti Zara', role: 'service_crew', zone: 'Z-12', status: 'online' },
+            { id: 'EMP-IJ34KL56', name: 'Daniel Tan', role: 'experience_crew', zone: 'Z-07', status: 'online' },
+            { id: 'EMP-MN78OP90', name: 'Norliza Karim', role: 'fnb_crew', zone: 'Z-03', status: 'busy' },
+            { id: 'EMP-QR12ST34', name: 'Ravi Muthu', role: 'security_crew', zone: 'Z-09', status: 'online' },
+
+            // ── CREW — Available / Unassigned (zone = null) ──
+            { id: 'EMP-UV56WX78', name: 'Hana Yusof', role: 'service_crew', zone: null, status: 'online' },
+            { id: 'EMP-YZ90AB12', name: 'Ahmad Faizal', role: 'runner_crew', zone: null, status: 'online' },
+            { id: 'EMP-CD34EF56', name: 'Siew Peng Ong', role: 'cleaning_crew', zone: null, status: 'online' },
+            { id: 'EMP-GH78IJ90', name: 'Kumaresh Pillay', role: 'security_crew', zone: null, status: 'online' },
+            { id: 'EMP-KL12MN34', name: 'Azimah Daud', role: 'fnb_crew', zone: null, status: 'online' },
+            { id: 'EMP-OP56QR78', name: 'Jason Liew', role: 'experience_crew', zone: null, status: 'online' },
+        ];
+
+        let overrideCount = 0;
+        let pendingDrop = null; // { empId, fromZone, toZone }
+
+        // ══════════════════════════════════════════
+        //  RENDERING
+        // ══════════════════════════════════════════
+
+        function getZoneName(zoneId) {
+            if (!zoneId) return 'Available Pool';
+            const z = ZONES.find(z => z.id === zoneId);
+            return z ? z.name : zoneId;
+        }
+
+        function buildCrewNodeHTML(person) {
+            const meta = ROLE_META[person.role] || { label: person.role, tier: 'crew', badge: 'badge-crew', icon: 'user' };
+            const isMgr = meta.tier === 'manager';
+            const dotClass = person.status === 'online' ? 'dot-online' : person.status === 'busy' ? 'dot-busy' : 'dot-offline';
+
+            if (isMgr) {
+                return `
+                <div class="manager-node" data-emp-id="${person.id}" title="Manager — Locked">
+                    <div class="lock-badge"><i data-lucide="lock" class="w-2.5 h-2.5 text-gold/60"></i></div>
+                    <div class="w-7 h-7 rounded-full bg-space border border-gold/20 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="${meta.icon}" class="w-3.5 h-3.5 text-gold/60"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs text-white font-medium truncate">${person.name}</p>
+                        <span class="badge ${meta.badge}">${meta.label}</span>
+                    </div>
+                    <span class="status-dot ${dotClass}"></span>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <button onclick="showToast('📻 Radio: ${meta.radioFreq || 'N/A'}')" class="node-action" title="Radio Channel">
+                            <i data-lucide="radio" class="w-3 h-3"></i>
+                        </button>
+                        <button onclick="showToast('💬 Direct message sent to ${person.name}')" class="node-action" title="Direct Message">
+                            <i data-lucide="message-square" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }
+
+            return `
+            <div class="crew-node" draggable="true" data-emp-id="${person.id}"
+                ondragstart="onDragStart(event)" ondragend="onDragEnd(event)">
+                <div class="w-7 h-7 rounded-full bg-space border border-white/10 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="${meta.icon}" class="w-3.5 h-3.5 text-gray-400"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-white font-medium truncate">${person.name}</p>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="badge ${meta.badge}">${meta.label}</span>
+                        <span class="font-mono text-[9px] text-gray-600">${person.id.substring(0, 8)}</span>
+                    </div>
+                </div>
+                <span class="status-dot ${dotClass}"></span>
+            </div>`;
+        }
+
+        function renderBoard() {
+            const filterRole = document.getElementById('filter-role').value;
+            const searchTerm = document.getElementById('search-crew').value.toLowerCase().trim();
+
+            // ── LEFT PANEL: Available pool ──
+            const pool = document.getElementById('available-pool');
+            pool.innerHTML = '';
+            const availableCrew = PERSONNEL.filter(p => {
+                if (p.zone !== null) return false;
+                const meta = ROLE_META[p.role];
+                if (!meta || meta.tier !== 'crew') return false;
+                if (filterRole !== 'all' && p.role !== filterRole) return false;
+                if (searchTerm && !p.name.toLowerCase().includes(searchTerm) && !p.id.toLowerCase().includes(searchTerm)) return false;
+                return true;
+            });
+
+            if (availableCrew.length === 0) {
+                pool.innerHTML = `<div class="empty-pool"><i data-lucide="inbox" class="w-8 h-8 mb-2"></i><span class="text-xs">No available crew</span><span class="text-[10px] text-gray-700 mt-1">All hands deployed or filtered out</span></div>`;
+            } else {
+                availableCrew.forEach(p => { pool.insertAdjacentHTML('beforeend', buildCrewNodeHTML(p)); });
+            }
+            document.getElementById('pool-count').textContent = `${availableCrew.length} member${availableCrew.length !== 1 ? 's' : ''}`;
+
+            // ── RIGHT PANEL: Zone columns ──
+            const columnsContainer = document.getElementById('zone-columns');
+            columnsContainer.innerHTML = '';
+
+            ZONES.forEach(zone => {
+                const zonePersonnel = PERSONNEL.filter(p => {
+                    if (p.zone !== zone.id) return false;
+                    if (filterRole !== 'all') {
+                        const meta = ROLE_META[p.role];
+                        if (meta && meta.tier === 'crew' && p.role !== filterRole) return false;
+                    }
+                    if (searchTerm) {
+                        const meta = ROLE_META[p.role];
+                        if (meta && meta.tier === 'crew' && !p.name.toLowerCase().includes(searchTerm) && !p.id.toLowerCase().includes(searchTerm)) return false;
+                    }
+                    return true;
+                });
+
+                // Separate managers (pinned top) and crew
+                const managers = zonePersonnel.filter(p => ROLE_META[p.role]?.tier === 'manager');
+                const crew = zonePersonnel.filter(p => ROLE_META[p.role]?.tier === 'crew');
+
+                const col = document.createElement('div');
+                col.className = 'zone-column glass-panel rounded-xl overflow-hidden flex flex-col';
+                col.innerHTML = `
+                    <div class="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between bg-space/30">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-7 h-7 rounded-md bg-space/80 border border-white/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="${zone.icon}" class="w-3.5 h-3.5 text-gold/50"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="text-xs font-semibold text-white truncate">${zone.name}</h4>
+                                <p class="font-mono text-[9px] text-gray-600">${zone.id}</p>
+                            </div>
+                        </div>
+                        <span class="font-mono text-[10px] text-gray-500 flex-shrink-0">${managers.length + crew.length}</span>
+                    </div>
+                    ${managers.length ? `<div class="px-3 pt-2 pb-1 space-y-1.5">${managers.map(m => buildCrewNodeHTML(m)).join('')}</div>` : ''}
+                    ${managers.length && crew.length ? `<div class="mx-3 border-t border-dashed border-white/[0.06]"></div>` : ''}
+                    <div class="drop-zone px-3 py-2 space-y-1.5 flex-1" data-zone="${zone.id}"
+                        ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+                        ${crew.length ? crew.map(c => buildCrewNodeHTML(c)).join('') : `<div class="text-center py-3"><span class="text-[10px] text-gray-700">Drop crew here</span></div>`}
+                    </div>
+                `;
+                columnsContainer.appendChild(col);
+            });
+
+            // Make available pool a drop target too (for unassigning)
+            pool.setAttribute('ondragover', 'onDragOver(event)');
+            pool.setAttribute('ondragleave', 'onDragLeave(event)');
+            pool.setAttribute('ondrop', 'onDrop(event)');
+
+            lucide.createIcons();
+            updateStats();
+        }
+
+        function updateStats() {
+            const crewList = PERSONNEL.filter(p => ROLE_META[p.role]?.tier === 'crew');
+            const deployed = crewList.filter(p => p.zone !== null);
+            const available = crewList.filter(p => p.zone === null);
+            const managers = PERSONNEL.filter(p => ROLE_META[p.role]?.tier === 'manager');
+
+            document.getElementById('stat-total').textContent = PERSONNEL.length;
+            document.getElementById('stat-deployed').textContent = deployed.length;
+            document.getElementById('stat-available').textContent = available.length;
+            document.getElementById('stat-managers').textContent = managers.length;
+            document.getElementById('stat-overrides').textContent = overrideCount;
+        }
+
+        function applyFilters() {
+            renderBoard();
+        }
+
+        // ══════════════════════════════════════════
+        //  DRAG & DROP (HTML5 API)
+        // ══════════════════════════════════════════
+
+        let draggedEmpId = null;
+
+        function onDragStart(e) {
+            draggedEmpId = e.target.closest('[data-emp-id]').dataset.empId;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedEmpId);
+            setTimeout(() => {
+                e.target.closest('.crew-node')?.classList.add('dragging');
+            }, 0);
+        }
+
+        function onDragEnd(e) {
+            draggedEmpId = null;
+            e.target.closest('.crew-node')?.classList.remove('dragging');
+            document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('drag-over'));
+        }
+
+        function onDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function onDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function onDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const empId = e.dataTransfer.getData('text/plain');
+            const targetZone = e.currentTarget.dataset.zone;
+            if (!empId || targetZone === undefined) return;
+
+            const person = PERSONNEL.find(p => p.id === empId);
+            if (!person) return;
+
+            // Don't allow dropping managers
+            if (ROLE_META[person.role]?.tier === 'manager') {
+                showToast('⛔ Managers cannot be reassigned via drag-and-drop.');
+                return;
+            }
+
+            const fromZone = person.zone;
+            const toZone = targetZone === 'available' ? null : targetZone;
+
+            // No-op if same zone
+            if (fromZone === toZone) return;
+
+            // Show confirmation modal
+            pendingDrop = { empId, fromZone, toZone };
+            document.getElementById('confirm-name').textContent = person.name;
+            document.getElementById('confirm-role').textContent = ROLE_META[person.role]?.label || person.role;
+            document.getElementById('confirm-from').textContent = fromZone ? getZoneName(fromZone) : 'Available Pool';
+            document.getElementById('confirm-to').textContent = toZone ? getZoneName(toZone) : 'Available Pool';
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function executeReassignment() {
+            if (!pendingDrop) return;
+            const { empId, fromZone, toZone } = pendingDrop;
+            const person = PERSONNEL.find(p => p.id === empId);
+            if (!person) return;
+
+            person.zone = toZone;
+            overrideCount++;
+            closeConfirmModal();
+            renderBoard();
+
+            // Flash the moved node
+            setTimeout(() => {
+                const node = document.querySelector(`[data-emp-id="${empId}"]`);
+                if (node) node.classList.add('reassigned');
+            }, 50);
+
+            // Simulate POST + WebSocket notification
+            const action = toZone ? `deployed to ${getZoneName(toZone)}` : 'moved to Available Pool';
+            showToast(`✅ ${person.name} ${action}. Override #${overrideCount} logged.`);
+            console.log(`[POST] daily_shift_overrides → { emp: "${empId}", from: "${fromZone}", to: "${toZone}", timestamp: "${new Date().toISOString()}" }`);
+            console.log(`[WS] Push notification → ${person.name}'s device: "You have been reassigned to ${toZone ? getZoneName(toZone) : 'standby'}."`);
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            pendingDrop = null;
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('confirm-modal').addEventListener('click', function (e) {
+            if (e.target === this) closeConfirmModal();
+        });
+
+        // ══════════════════════════════════════════
+        //  TOAST
+        // ══════════════════════════════════════════
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            t.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                t.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+                t.classList.remove('translate-y-0', 'opacity-100');
+            }, 3500);
+        }
+
+        // ══════════════════════════════════════════
+        //  INIT
+        // ══════════════════════════════════════════
+        renderBoard();
+    </script>
+</body>
+
+</html>

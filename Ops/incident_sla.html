@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Incident & SLA Monitoring</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Orbitron:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { space: '#020408', panel: 'rgba(10, 20, 30, 0.7)', gold: '#d4af37', bronze: '#806b45' },
+                    fontFamily: { cinzel: ['Cinzel', 'serif'], inter: ['Inter', 'sans-serif'], orbitron: ['Orbitron', 'sans-serif'], mono: ['Fira Code', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.15);
+            border-radius: 3px
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.4)
+        }
+
+        body {
+            background-color: transparent;
+            color: #e2e8f0
+        }
+
+        .glass-panel {
+            background-color: rgba(10, 20, 30, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Severity badges */
+        .sev-critical {
+            background: rgba(239, 68, 68, 0.12);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .sev-high {
+            background: rgba(251, 146, 60, 0.12);
+            color: #fb923c;
+            border-color: rgba(251, 146, 60, 0.3);
+        }
+
+        .sev-medium {
+            background: rgba(251, 191, 36, 0.12);
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .sev-low {
+            background: rgba(34, 197, 94, 0.12);
+            color: #4ade80;
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .25rem;
+            font-size: .55rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: .15rem .5rem;
+            border-radius: 9999px;
+            border: 1px solid;
+            white-space: nowrap;
+        }
+
+        /* SLA risk bar */
+        .sla-bar-track {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .sla-bar-fill {
+            height: 100%;
+            border-radius: 9999px;
+            transition: width .6s ease;
+        }
+
+        .sla-ok {
+            background: linear-gradient(90deg, #22c55e, #4ade80);
+        }
+
+        .sla-warn {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        .sla-breach {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+
+        /* Kanban column */
+        .kanban-col {
+            min-height: 200px;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        /* Ticket card */
+        .ticket-card {
+            background: rgba(6, 12, 20, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: .6rem;
+            padding: .75rem;
+            transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+            cursor: default;
+        }
+
+        .ticket-card:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+            transform: translateY(-1px);
+        }
+
+        /* SLA breach pulse */
+        .sla-breach-card {
+            border-color: rgba(239, 68, 68, 0.25) !important;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.08);
+        }
+
+        /* Status dots */
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .status-dot::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                box-shadow: 0 0 0 0 currentColor;
+                opacity: 0.6
+            }
+
+            70% {
+                box-shadow: 0 0 0 5px currentColor;
+                opacity: 0
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 currentColor;
+                opacity: 0
+            }
+        }
+
+        .dot-live {
+            background: #22c55e;
+            color: #22c55e;
+        }
+
+        /* New ticket flash */
+        @keyframes ticket-in {
+            0% {
+                opacity: 0;
+                transform: translateX(-12px) scale(0.96);
+                border-color: rgba(212, 175, 55, 0.5);
+            }
+
+            60% {
+                border-color: rgba(212, 175, 55, 0.3);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+                border-color: rgba(255, 255, 255, 0.05);
+            }
+        }
+
+        .ticket-new {
+            animation: ticket-in .6s ease forwards;
+        }
+
+        /* Column header count badge */
+        .col-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 9999px;
+            font-size: .6rem;
+            font-weight: 700;
+            padding: 0 .4rem;
+        }
+
+        /* Category tags */
+        .cat-biohazard {
+            background: rgba(168, 85, 247, 0.1);
+            color: #c084fc;
+            border-color: rgba(168, 85, 247, 0.25);
+        }
+
+        .cat-altercation {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+
+        .cat-medical {
+            background: rgba(244, 114, 182, 0.1);
+            color: #f472b6;
+            border-color: rgba(244, 114, 182, 0.25);
+        }
+
+        .cat-equipment {
+            background: rgba(251, 146, 60, 0.1);
+            color: #fb923c;
+            border-color: rgba(251, 146, 60, 0.25);
+        }
+
+        .cat-safety {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.25);
+        }
+
+        .cat-spill {
+            background: rgba(45, 212, 191, 0.1);
+            color: #2dd4bf;
+            border-color: rgba(45, 212, 191, 0.25);
+        }
+
+        .cat-guest {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            border-color: rgba(96, 165, 250, 0.25);
+        }
+
+        .cat-fire {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+
+        .cat-structural {
+            background: rgba(251, 146, 60, 0.1);
+            color: #fb923c;
+            border-color: rgba(251, 146, 60, 0.25);
+        }
+
+        .cat-power {
+            background: rgba(129, 140, 248, 0.1);
+            color: #818cf8;
+            border-color: rgba(129, 140, 248, 0.25);
+        }
+
+        /* Escalation flash */
+        @keyframes escalation-pulse {
+
+            0%,
+            100% {
+                border-color: rgba(239, 68, 68, 0.15);
+            }
+
+            50% {
+                border-color: rgba(239, 68, 68, 0.45);
+            }
+        }
+
+        .escalation-pulse {
+            animation: escalation-pulse 1.5s ease infinite;
+        }
+
+        /* Detail modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 4, 8, 0.85);
+            backdrop-filter: blur(6px);
+            padding: 2rem 1rem;
+        }
+
+        .modal-overlay.hidden {
+            display: none
+        }
+
+        /* Stat card */
+        .stat-card {
+            background: rgba(10, 20, 30, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: .6rem;
+            padding: .75rem 1rem;
+            transition: border-color .2s ease;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(212, 175, 55, 0.2);
+        }
+
+        /* Filters */
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d4af37' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right .4rem center;
+            background-repeat: no-repeat;
+            background-size: 1.2em 1.2em;
+        }
+    </style>
+</head>
+
+<body class="font-inter p-6 space-y-5 h-screen overflow-y-auto pb-24 relative">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
+                <i data-lucide="siren" class="w-6 h-6 mr-3"></i> Incident & SLA Monitoring
+            </h3>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Park-Wide Incident Pipeline — Resolution
+                Velocity Tracker</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/20 rounded-full px-4 py-1.5">
+                <span class="status-dot dot-live" style="width:6px;height:6px"></span>
+                <span class="font-orbitron text-[10px] text-emerald-400 tracking-widest uppercase">Auto-Ingest
+                    Active</span>
+            </div>
+            <div class="flex items-center gap-1 bg-space/60 border border-white/10 rounded-lg px-3 py-1.5">
+                <i data-lucide="filter" class="w-3.5 h-3.5 text-gray-500"></i>
+                <select id="filter-sev"
+                    class="bg-transparent text-xs text-gray-300 focus:outline-none cursor-pointer pr-5"
+                    onchange="renderBoard()">
+                    <option value="all">All Severity</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-1 bg-space/60 border border-white/10 rounded-lg px-3 py-1.5">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-gray-500"></i>
+                <select id="filter-zone"
+                    class="bg-transparent text-xs text-gray-300 focus:outline-none cursor-pointer pr-5"
+                    onchange="renderBoard()">
+                    <option value="all">All Zones</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-1 bg-space/60 border border-white/10 rounded-lg px-3 py-1.5">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-gray-500"></i>
+                <input type="text" id="search-input" placeholder="Search tickets..."
+                    class="bg-transparent text-xs text-gray-300 focus:outline-none w-28 placeholder-gray-600"
+                    oninput="renderBoard()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <div class="stat-card">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Total Open</p>
+            <p id="stat-open" class="font-orbitron text-xl text-white">—</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Critical</p>
+            <p id="stat-critical" class="font-orbitron text-xl text-red-400">—</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">SLA At Risk</p>
+            <p id="stat-sla-risk" class="font-orbitron text-xl text-amber-400">—</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">SLA Breached</p>
+            <p id="stat-sla-breached" class="font-orbitron text-xl text-red-400">—</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Avg Resolution</p>
+            <p id="stat-avg-res" class="font-orbitron text-xl text-emerald-400">—</p>
+        </div>
+        <div class="stat-card">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-0.5">Resolved Today</p>
+            <p id="stat-resolved" class="font-orbitron text-xl text-gold">—</p>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="flex gap-4 overflow-x-auto pb-4" id="kanban-board">
+        <!-- Columns injected by JS -->
+    </div>
+
+    <!-- Ticket Detail Modal -->
+    <div id="detail-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeDetailModal()">
+        <div
+            class="glass-panel rounded-lg w-full max-w-xl border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] my-auto max-h-[85vh] flex flex-col">
+            <div
+                class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg flex-shrink-0">
+                <h3 class="font-cinzel text-base text-gold flex items-center tracking-wider">
+                    <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                    <span id="detail-title">Incident Detail</span>
+                </h3>
+                <button onclick="closeDetailModal()" class="text-gray-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-5 space-y-4 overflow-y-auto flex-1" id="detail-body">
+                <!-- Injected -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"
+        class="fixed bottom-8 right-8 bg-space border-l-4 border-l-gold border-y border-y-white/10 border-r border-r-white/10 text-white px-6 py-4 rounded-lg shadow-xl backdrop-blur-md text-sm font-semibold flex items-center space-x-3 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-[60]">
+        <i data-lucide="info" class="w-5 h-5 text-gold"></i><span id="toast-msg"></span>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ══════════════════════════════════════════
+        //  DATA MODEL
+        // ══════════════════════════════════════════
+
+        const ZONES = [
+            { id: 'Z-01', name: 'The Grand Atrium' },
+            { id: 'Z-02', name: 'Crystal Caverns' },
+            { id: 'Z-03', name: 'Verdant Canopy' },
+            { id: 'Z-04', name: 'Obsidian Falls' },
+            { id: 'Z-05', name: 'Ember Forge District' },
+            { id: 'Z-06', name: 'Azure Depths Aquarium' },
+            { id: 'Z-07', name: 'Starlight Amphitheatre' },
+            { id: 'Z-08', name: 'Twilight Bazaar' },
+            { id: 'Z-09', name: 'The Labyrinth' },
+            { id: 'Z-10', name: 'Solstice Gardens' },
+            { id: 'Z-11', name: 'Ironheart Coliseum' },
+            { id: 'Z-12', name: 'Sanctum of Echoes' },
+        ];
+
+        const KANBAN_COLS = [
+            { id: 'new', label: 'New / Incoming', icon: 'inbox', color: 'text-blue-400', countBg: 'bg-blue-500/15 text-blue-400' },
+            { id: 'triaged', label: 'Triaged', icon: 'scan-search', color: 'text-purple-400', countBg: 'bg-purple-500/15 text-purple-400' },
+            { id: 'in_progress', label: 'In Progress', icon: 'loader', color: 'text-amber-400', countBg: 'bg-amber-500/15 text-amber-400' },
+            { id: 'escalated', label: 'Escalated', icon: 'alert-triangle', color: 'text-red-400', countBg: 'bg-red-500/15 text-red-400' },
+            { id: 'resolved', label: 'Resolved', icon: 'check-circle', color: 'text-emerald-400', countBg: 'bg-emerald-500/15 text-emerald-400' },
+        ];
+
+        const SEVERITY = {
+            critical: { label: 'Critical', badge: 'sev-critical', slaMinutes: 15, icon: 'alert-octagon', sort: 0 },
+            high: { label: 'High', badge: 'sev-high', slaMinutes: 30, icon: 'alert-triangle', sort: 1 },
+            medium: { label: 'Medium', badge: 'sev-medium', slaMinutes: 60, icon: 'alert-circle', sort: 2 },
+            low: { label: 'Low', badge: 'sev-low', slaMinutes: 120, icon: 'info', sort: 3 },
+        };
+
+        const CATEGORIES = {
+            biohazard: { label: 'Biohazard', badge: 'cat-biohazard', icon: 'biohazard' },
+            altercation: { label: 'Altercation', badge: 'cat-altercation', icon: 'swords' },
+            medical: { label: 'Medical', badge: 'cat-medical', icon: 'heart-pulse' },
+            equipment: { label: 'Equipment', badge: 'cat-equipment', icon: 'wrench' },
+            safety: { label: 'Safety Hazard', badge: 'cat-safety', icon: 'hard-hat' },
+            spill: { label: 'Spill / Cleanup', badge: 'cat-spill', icon: 'droplets' },
+            guest: { label: 'Guest Complaint', badge: 'cat-guest', icon: 'message-square-warning' },
+            fire: { label: 'Fire / Smoke', badge: 'cat-fire', icon: 'flame' },
+            structural: { label: 'Structural', badge: 'cat-structural', icon: 'building' },
+            power: { label: 'Power Outage', badge: 'cat-power', icon: 'zap-off' },
+        };
+
+        const REPORTERS = [
+            { name: 'Ahmad Razif', role: 'fnb_crew', roleLabel: 'F&B Crew' },
+            { name: 'Chen Wei Lin', role: 'security_crew', roleLabel: 'Security' },
+            { name: 'Fatimah Abdullah', role: 'cleaning_crew', roleLabel: 'Cleaning' },
+            { name: 'Rajesh Krishnan', role: 'health_crew', roleLabel: 'Health' },
+            { name: 'Irfan Yusof', role: 'internal_maintainence_crew', roleLabel: 'Maintenance' },
+            { name: 'Amirul Hakim', role: 'security_crew', roleLabel: 'Security' },
+            { name: 'Nadia Ismail', role: 'cleaning_crew', roleLabel: 'Cleaning' },
+            { name: 'Arjun Suresh', role: 'security_crew', roleLabel: 'Security' },
+            { name: 'Siti Zara', role: 'service_crew', roleLabel: 'Service' },
+            { name: 'Hafiz Nazri', role: 'runner_crew', roleLabel: 'Runner' },
+        ];
+
+        const INCIDENT_TEMPLATES = [
+            { title: 'Biohazard spill near restroom corridor', category: 'biohazard', severity: 'high' },
+            { title: 'Guest altercation at queue line', category: 'altercation', severity: 'critical' },
+            { title: 'Minor injury — guest tripped on wet surface', category: 'medical', severity: 'high' },
+            { title: 'Beverage station malfunction', category: 'equipment', severity: 'medium' },
+            { title: 'Guardrail loose on upper viewing deck', category: 'safety', severity: 'critical' },
+            { title: 'Large liquid spill on main walkway', category: 'spill', severity: 'medium' },
+            { title: 'Guest complaint — excessive wait time', category: 'guest', severity: 'low' },
+            { title: 'Smoke detected near kitchen exhaust', category: 'fire', severity: 'critical' },
+            { title: 'Ceiling tile dislodged in corridor', category: 'structural', severity: 'high' },
+            { title: 'Partial power loss in sub-level lighting', category: 'power', severity: 'high' },
+            { title: 'Unattended bag reported near entrance', category: 'safety', severity: 'critical' },
+            { title: 'Guest requiring wheelchair assistance', category: 'medical', severity: 'low' },
+            { title: 'Point-of-sale terminal unresponsive', category: 'equipment', severity: 'medium' },
+            { title: 'Verbal confrontation between guests', category: 'altercation', severity: 'high' },
+            { title: 'Food contamination report at café', category: 'biohazard', severity: 'critical' },
+            { title: 'Broken glass near play area', category: 'safety', severity: 'high' },
+            { title: 'Cleaning chemical odor complaint', category: 'guest', severity: 'medium' },
+            { title: 'Elevator stuck between floors', category: 'equipment', severity: 'critical' },
+            { title: 'Graffiti discovered in restroom', category: 'guest', severity: 'low' },
+            { title: 'Water leak from overhead pipe', category: 'structural', severity: 'medium' },
+        ];
+
+        // ── STATE ──
+        let tickets = [];
+        let ticketCounter = 0;
+
+        function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        function generateTicketId() {
+            ticketCounter++;
+            return `INC-${String(ticketCounter).padStart(4, '0')}`;
+        }
+
+        function minutesAgo(mins) {
+            return new Date(Date.now() - mins * 60 * 1000);
+        }
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('en-US', { timeZone: 'Asia/Kuala_Lumpur', hour12: false, hour: '2-digit', minute: '2-digit' });
+        }
+
+        function formatDuration(mins) {
+            if (mins < 1) return '< 1m';
+            if (mins < 60) return `${Math.round(mins)}m`;
+            return `${Math.floor(mins / 60)}h ${Math.round(mins % 60)}m`;
+        }
+
+        function getSlaInfo(ticket) {
+            const sevMeta = SEVERITY[ticket.severity];
+            const slaLimit = sevMeta.slaMinutes;
+            const elapsedMs = Date.now() - ticket.createdAt.getTime();
+            const elapsedMin = elapsedMs / 60000;
+            const pct = Math.min(100, (elapsedMin / slaLimit) * 100);
+            const remaining = slaLimit - elapsedMin;
+            let status = 'ok';
+            if (remaining <= 0) status = 'breach';
+            else if (pct >= 70) status = 'warn';
+            return { pct: Math.round(pct), remaining, status, slaLimit, elapsedMin };
+        }
+
+        // Generate initial batch of seed tickets
+        function seedTickets() {
+            const statuses = ['new', 'new', 'triaged', 'triaged', 'in_progress', 'in_progress', 'in_progress', 'escalated', 'resolved', 'resolved', 'resolved', 'resolved'];
+
+            for (let i = 0; i < 16; i++) {
+                const tmpl = INCIDENT_TEMPLATES[i % INCIDENT_TEMPLATES.length];
+                const reporter = randomPick(REPORTERS);
+                const zone = randomPick(ZONES);
+                const minsAgo = randomInt(3, 180);
+                const status = statuses[i % statuses.length];
+
+                tickets.push({
+                    id: generateTicketId(),
+                    title: tmpl.title,
+                    category: tmpl.category,
+                    severity: tmpl.severity,
+                    zone: zone,
+                    reporter: reporter,
+                    status: status,
+                    createdAt: minutesAgo(minsAgo),
+                    resolvedAt: status === 'resolved' ? minutesAgo(randomInt(0, minsAgo - 1)) : null,
+                    notes: `Reported via crew handheld device. Auto-ingested from ${reporter.roleLabel} interface.`,
+                });
+            }
+        }
+
+        // ══════════════════════════════════════════
+        //  RENDERING
+        // ══════════════════════════════════════════
+
+        function renderBoard() {
+            const board = document.getElementById('kanban-board');
+            board.innerHTML = '';
+
+            const filterSev = document.getElementById('filter-sev').value;
+            const filterZone = document.getElementById('filter-zone').value;
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+
+            const filtered = tickets.filter(t => {
+                if (filterSev !== 'all' && t.severity !== filterSev) return false;
+                if (filterZone !== 'all' && t.zone.id !== filterZone) return false;
+                if (searchTerm && !t.title.toLowerCase().includes(searchTerm) && !t.id.toLowerCase().includes(searchTerm) && !t.reporter.name.toLowerCase().includes(searchTerm)) return false;
+                return true;
+            });
+
+            KANBAN_COLS.forEach(col => {
+                let colTickets = filtered.filter(t => t.status === col.id);
+
+                // Sort by severity (critical first), then SLA risk
+                colTickets.sort((a, b) => {
+                    const sa = SEVERITY[a.severity]?.sort ?? 99;
+                    const sb = SEVERITY[b.severity]?.sort ?? 99;
+                    if (sa !== sb) return sa - sb;
+                    // Then by SLA elapsed (more elapsed = higher priority)
+                    return b.createdAt - a.createdAt;
+                });
+
+                const colEl = document.createElement('div');
+                colEl.className = 'kanban-col flex flex-col';
+                colEl.innerHTML = `
+                    <div class="flex items-center justify-between px-1 mb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="${col.icon}" class="w-4 h-4 ${col.color}"></i>
+                            <span class="text-xs font-semibold text-white uppercase tracking-wider">${col.label}</span>
+                        </div>
+                        <span class="col-count ${col.countBg}">${colTickets.length}</span>
+                    </div>
+                    <div class="glass-panel rounded-xl flex-1 p-2.5 space-y-2 overflow-y-auto max-h-[60vh]" id="col-${col.id}">
+                        ${colTickets.length === 0 ? `<div class="text-center py-8"><span class="text-[10px] text-gray-700 uppercase tracking-widest">No tickets</span></div>` : ''}
+                        ${colTickets.map(t => renderTicketCard(t, col.id)).join('')}
+                    </div>
+                `;
+                board.appendChild(colEl);
+            });
+
+            lucide.createIcons();
+            updateStats(filtered);
+        }
+
+        function renderTicketCard(ticket, colId) {
+            const sevMeta = SEVERITY[ticket.severity];
+            const catMeta = CATEGORIES[ticket.category];
+            const sla = getSlaInfo(ticket);
+            const isResolved = ticket.status === 'resolved';
+            const breachClass = sla.status === 'breach' && !isResolved ? 'sla-breach-card escalation-pulse' : '';
+            const slaBarClass = sla.status === 'breach' ? 'sla-breach' : sla.status === 'warn' ? 'sla-warn' : 'sla-ok';
+
+            let slaText = '';
+            if (isResolved && ticket.resolvedAt) {
+                const resMin = (ticket.resolvedAt.getTime() - ticket.createdAt.getTime()) / 60000;
+                const met = resMin <= sevMeta.slaMinutes;
+                slaText = `<span class="text-[9px] ${met ? 'text-emerald-500' : 'text-red-400'} font-mono">${met ? '✓' : '✗'} ${formatDuration(resMin)}</span>`;
+            } else if (sla.status === 'breach') {
+                slaText = `<span class="text-[9px] text-red-400 font-bold uppercase tracking-wider">Breached ${formatDuration(Math.abs(sla.remaining))} ago</span>`;
+            } else {
+                slaText = `<span class="text-[9px] text-gray-500 font-mono">${formatDuration(sla.remaining)} left</span>`;
+            }
+
+            return `
+            <div class="ticket-card ${breachClass}" onclick="openDetail('${ticket.id}')">
+                <div class="flex items-start justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="font-mono text-[10px] text-gray-600 flex-shrink-0">${ticket.id}</span>
+                        <span class="badge ${sevMeta.badge}"><i data-lucide="${sevMeta.icon}" class="w-2.5 h-2.5"></i>${sevMeta.label}</span>
+                    </div>
+                    <span class="text-[9px] text-gray-600 font-mono flex-shrink-0">${formatTime(ticket.createdAt)}</span>
+                </div>
+                <p class="text-xs text-white font-medium leading-snug mb-2">${ticket.title}</p>
+                <div class="flex items-center gap-1.5 flex-wrap mb-2">
+                    <span class="badge ${catMeta.badge}"><i data-lucide="${catMeta.icon}" class="w-2.5 h-2.5"></i>${catMeta.label}</span>
+                    <span class="text-[9px] text-gray-600">•</span>
+                    <span class="text-[9px] text-gray-400">${ticket.zone.name}</span>
+                </div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-4 h-4 rounded-full bg-space border border-white/10 flex items-center justify-center">
+                            <i data-lucide="user" class="w-2 h-2 text-gray-500"></i>
+                        </div>
+                        <span class="text-[10px] text-gray-500">${ticket.reporter.name}</span>
+                        <span class="text-[9px] text-gray-700">${ticket.reporter.roleLabel}</span>
+                    </div>
+                    ${slaText}
+                </div>
+                ${!isResolved ? `<div class="sla-bar-track"><div class="sla-bar-fill ${slaBarClass}" style="width:${Math.min(sla.pct, 100)}%"></div></div>` : ''}
+            </div>`;
+        }
+
+        function updateStats(filtered) {
+            const all = filtered || tickets;
+            const open = all.filter(t => t.status !== 'resolved');
+            const critical = open.filter(t => t.severity === 'critical');
+            const resolved = all.filter(t => t.status === 'resolved');
+
+            let slaAtRisk = 0, slaBreached = 0;
+            open.forEach(t => {
+                const sla = getSlaInfo(t);
+                if (sla.status === 'breach') slaBreached++;
+                else if (sla.status === 'warn') slaAtRisk++;
+            });
+
+            const avgRes = resolved.length > 0
+                ? resolved.reduce((s, t) => s + ((t.resolvedAt ? t.resolvedAt.getTime() : Date.now()) - t.createdAt.getTime()) / 60000, 0) / resolved.length
+                : 0;
+
+            document.getElementById('stat-open').textContent = open.length;
+            document.getElementById('stat-critical').textContent = critical.length;
+            document.getElementById('stat-sla-risk').textContent = slaAtRisk;
+            document.getElementById('stat-sla-breached').textContent = slaBreached;
+            document.getElementById('stat-avg-res').textContent = resolved.length > 0 ? formatDuration(avgRes) : '—';
+            document.getElementById('stat-resolved').textContent = resolved.length;
+        }
+
+        // ══════════════════════════════════════════
+        //  TICKET DETAIL MODAL
+        // ══════════════════════════════════════════
+
+        function openDetail(ticketId) {
+            const t = tickets.find(tk => tk.id === ticketId);
+            if (!t) return;
+            const sevMeta = SEVERITY[t.severity];
+            const catMeta = CATEGORIES[t.category];
+            const sla = getSlaInfo(t);
+            const isResolved = t.status === 'resolved';
+
+            let slaStatusHTML = '';
+            if (isResolved && t.resolvedAt) {
+                const resMin = (t.resolvedAt.getTime() - t.createdAt.getTime()) / 60000;
+                const met = resMin <= sevMeta.slaMinutes;
+                slaStatusHTML = `<span class="badge ${met ? 'sev-low' : 'sev-critical'}">${met ? 'SLA Met' : 'SLA Breached'} — ${formatDuration(resMin)}</span>`;
+            } else if (sla.status === 'breach') {
+                slaStatusHTML = `<span class="badge sev-critical">SLA Breached — ${formatDuration(Math.abs(sla.remaining))} over</span>`;
+            } else if (sla.status === 'warn') {
+                slaStatusHTML = `<span class="badge sev-medium">SLA At Risk — ${formatDuration(sla.remaining)} left</span>`;
+            } else {
+                slaStatusHTML = `<span class="badge sev-low">SLA On Track — ${formatDuration(sla.remaining)} left</span>`;
+            }
+
+            const statusLabels = { new: 'New / Incoming', triaged: 'Triaged', in_progress: 'In Progress', escalated: 'Escalated', resolved: 'Resolved' };
+
+            document.getElementById('detail-title').textContent = t.id;
+            document.getElementById('detail-body').innerHTML = `
+                <div class="space-y-4">
+                    <h4 class="text-sm text-white font-semibold leading-snug">${t.title}</h4>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="badge ${sevMeta.badge}"><i data-lucide="${sevMeta.icon}" class="w-2.5 h-2.5"></i>${sevMeta.label}</span>
+                        <span class="badge ${catMeta.badge}"><i data-lucide="${catMeta.icon}" class="w-2.5 h-2.5"></i>${catMeta.label}</span>
+                        ${slaStatusHTML}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-space/50 rounded-lg p-3 border border-white/5">
+                            <p class="text-[9px] text-gray-600 uppercase tracking-widest mb-1">Zone</p>
+                            <p class="text-xs text-white font-medium">${t.zone.name}</p>
+                            <p class="font-mono text-[10px] text-gray-500">${t.zone.id}</p>
+                        </div>
+                        <div class="bg-space/50 rounded-lg p-3 border border-white/5">
+                            <p class="text-[9px] text-gray-600 uppercase tracking-widest mb-1">Status</p>
+                            <p class="text-xs text-white font-medium">${statusLabels[t.status] || t.status}</p>
+                        </div>
+                        <div class="bg-space/50 rounded-lg p-3 border border-white/5">
+                            <p class="text-[9px] text-gray-600 uppercase tracking-widest mb-1">Reported By</p>
+                            <p class="text-xs text-white font-medium">${t.reporter.name}</p>
+                            <p class="text-[10px] text-gray-500">${t.reporter.roleLabel}</p>
+                        </div>
+                        <div class="bg-space/50 rounded-lg p-3 border border-white/5">
+                            <p class="text-[9px] text-gray-600 uppercase tracking-widest mb-1">SLA Target</p>
+                            <p class="text-xs text-white font-medium">${formatDuration(sevMeta.slaMinutes)}</p>
+                            <p class="text-[10px] text-gray-500">Elapsed: ${formatDuration(sla.elapsedMin)}</p>
+                        </div>
+                    </div>
+
+                    ${!isResolved ? `
+                    <div>
+                        <p class="text-[9px] text-gray-600 uppercase tracking-widest mb-1.5">SLA Progress</p>
+                        <div class="sla-bar-track" style="height:6px">
+                            <div class="sla-bar-fill ${sla.status === 'breach' ? 'sla-breach' : sla.status === 'warn' ? 'sla-warn' : 'sla-ok'}" style="width:${Math.min(sla.pct, 100)}%"></div>
+                        </div>
+                        <div class="flex justify-between mt-1">
+                            <span class="text-[9px] text-gray-600 font-mono">${sla.pct}%</span>
+                            <span class="text-[9px] text-gray-600 font-mono">${formatDuration(sevMeta.slaMinutes)} limit</span>
+                        </div>
+                    </div>` : ''}
+
+                    <div>
+                        <p class="text-[9px] text-gray-600 uppercase tracking-widest mb-1.5">Timestamps</p>
+                        <div class="bg-space/50 rounded-lg p-3 border border-white/5 space-y-1.5">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="clock" class="w-3 h-3 text-gray-600"></i>
+                                <span class="text-[10px] text-gray-500 w-16">Created</span>
+                                <span class="text-[10px] text-gray-300 font-mono">${t.createdAt.toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur', hour12: false })}</span>
+                            </div>
+                            ${isResolved && t.resolvedAt ? `
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i>
+                                <span class="text-[10px] text-gray-500 w-16">Resolved</span>
+                                <span class="text-[10px] text-gray-300 font-mono">${t.resolvedAt.toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur', hour12: false })}</span>
+                            </div>` : ''}
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-[9px] text-gray-600 uppercase tracking-widest mb-1.5">Internal Notes</p>
+                        <div class="bg-space/50 rounded-lg p-3 border border-white/5">
+                            <p class="text-xs text-gray-400 leading-relaxed">${t.notes}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-[10px] text-gray-600 bg-space/30 border border-white/5 rounded px-3 py-2">
+                        <i data-lucide="lock" class="w-3 h-3 text-gold/40 flex-shrink-0"></i>
+                        <span>Read-only view. Ticket state transitions are managed by ground-crew & shift-lead interfaces.</span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('detail-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+        }
+
+        // ══════════════════════════════════════════
+        //  AUTO-INGESTION (simulated WebSocket)
+        // ══════════════════════════════════════════
+
+        function ingestNewTicket() {
+            const tmpl = randomPick(INCIDENT_TEMPLATES);
+            const reporter = randomPick(REPORTERS);
+            const zone = randomPick(ZONES);
+
+            const ticket = {
+                id: generateTicketId(),
+                title: tmpl.title,
+                category: tmpl.category,
+                severity: tmpl.severity,
+                zone: zone,
+                reporter: reporter,
+                status: 'new',
+                createdAt: new Date(),
+                resolvedAt: null,
+                notes: `Auto-ingested via WebSocket from ${reporter.roleLabel} handheld in ${zone.name}.`,
+            };
+
+            tickets.unshift(ticket);
+            renderBoard();
+
+            // Flash the new ticket
+            setTimeout(() => {
+                const col = document.getElementById('col-new');
+                if (col && col.firstElementChild) {
+                    col.firstElementChild.classList.add('ticket-new');
+                }
+            }, 50);
+
+            const sevLabel = SEVERITY[ticket.severity]?.label || ticket.severity;
+            showToast(`🔔 New ${sevLabel} incident ingested: ${ticket.id} — ${ticket.title.substring(0, 40)}...`);
+            console.log(`[WS IN] Ticket ingested: ${ticket.id} from ${reporter.name} (${reporter.roleLabel}) at ${zone.name}`);
+        }
+
+        // Simulated ticket state progression (some tickets advance)
+        function simulateProgressions() {
+            const transitions = { new: 'triaged', triaged: 'in_progress', in_progress: 'resolved' };
+            const openTickets = tickets.filter(t => t.status !== 'resolved' && t.status !== 'escalated');
+            if (openTickets.length === 0) return;
+
+            // Pick a random open ticket and advance it
+            const pick = randomPick(openTickets);
+            const nextStatus = transitions[pick.status];
+            if (nextStatus) {
+                pick.status = nextStatus;
+                if (nextStatus === 'resolved') pick.resolvedAt = new Date();
+                renderBoard();
+            }
+
+            // Occasionally escalate critical/high tickets at SLA risk
+            const atRisk = tickets.filter(t => t.status !== 'resolved' && t.status !== 'escalated' && (t.severity === 'critical' || t.severity === 'high'));
+            atRisk.forEach(t => {
+                const sla = getSlaInfo(t);
+                if (sla.status === 'breach' && Math.random() > 0.6) {
+                    t.status = 'escalated';
+                    renderBoard();
+                    showToast(`⚠️ ${t.id} auto-escalated — SLA breached for ${SEVERITY[t.severity].label} incident.`);
+                }
+            });
+        }
+
+        // Ingest a new ticket every 12-25 seconds
+        setInterval(ingestNewTicket, randomInt(12000, 25000));
+        // Progress tickets every 8-15 seconds
+        setInterval(simulateProgressions, randomInt(8000, 15000));
+        // Re-render SLA bars every 30 seconds
+        setInterval(() => renderBoard(), 30000);
+
+        // ══════════════════════════════════════════
+        //  TOAST
+        // ══════════════════════════════════════════
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            t.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                t.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+                t.classList.remove('translate-y-0', 'opacity-100');
+            }, 4000);
+        }
+
+        // ══════════════════════════════════════════
+        //  INIT
+        // ══════════════════════════════════════════
+
+        // Populate zone filter
+        const zoneSelect = document.getElementById('filter-zone');
+        ZONES.forEach(z => {
+            const opt = document.createElement('option');
+            opt.value = z.id;
+            opt.textContent = `${z.id} — ${z.name}`;
+            zoneSelect.appendChild(opt);
+        });
+
+        seedTickets();
+        renderBoard();
+    </script>
+</body>
+
+</html>
