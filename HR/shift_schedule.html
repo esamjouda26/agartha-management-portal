@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workforce Roster & Deployment Matrix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Orbitron:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { space: '#020408', panel: 'rgba(10, 20, 30, 0.7)', gold: '#d4af37', bronze: '#806b45' },
+                    fontFamily: { cinzel: ['Cinzel', 'serif'], inter: ['Inter', 'sans-serif'], orbitron: ['Orbitron', 'sans-serif'], mono: ['Fira Code', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.2);
+            border-radius: 3px
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.5)
+        }
+
+        .glass-panel {
+            background-color: rgba(10, 20, 30, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: border-color .2s, box-shadow .2s
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(212, 175, 55, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5)
+        }
+
+        .form-label {
+            display: block;
+            font-size: .65rem;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            font-weight: 600;
+            margin-bottom: .25rem
+        }
+
+        .form-input {
+            width: 100%;
+            background: #020408;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: .375rem;
+            font-size: .8rem;
+            color: #fff;
+            padding: .5rem .75rem;
+            transition: border-color .2s
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: rgba(212, 175, 55, 0.5)
+        }
+
+        select.form-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d4af37' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right .5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.25rem;
+            padding-right: 2rem
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem
+        }
+
+        .shift-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .35rem .7rem;
+            border-radius: 9999px;
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            cursor: pointer;
+            border: 1px solid;
+            transition: all .15s;
+            position: relative
+        }
+
+        .shift-pill:hover {
+            filter: brightness(1.2)
+        }
+
+        .shift-pill .pill-delete {
+            display: none;
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ef4444;
+            color: #fff;
+            font-size: 9px;
+            line-height: 14px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 900
+        }
+
+        .shift-pill:hover .pill-delete {
+            display: block
+        }
+
+        .view-tab {
+            padding: .55rem 1.25rem;
+            font-size: .7rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            border-radius: .375rem;
+            cursor: pointer;
+            transition: all .2s;
+            color: #9ca3af;
+            border: 1px solid transparent
+        }
+
+        .view-tab:hover {
+            color: #d4af37;
+            background: rgba(212, 175, 55, 0.05)
+        }
+
+        .view-tab.active {
+            color: #d4af37;
+            background: rgba(212, 175, 55, 0.1);
+            border-color: rgba(212, 175, 55, 0.3)
+        }
+
+        .matrix-cell {
+            min-width: 52px;
+            height: 30px;
+            border-radius: .25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .6rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            transition: all .12s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            user-select: none;
+            position: relative
+        }
+
+        .matrix-cell:hover {
+            border-color: rgba(212, 175, 55, 0.4);
+            transform: scale(1.05)
+        }
+
+        .matrix-cell.off {
+            background: rgba(255, 255, 255, 0.02);
+            color: #4b5563
+        }
+
+        .matrix-cell.blocked {
+            opacity: .3;
+            cursor: not-allowed;
+            pointer-events: none
+        }
+
+        .role-group-header {
+            background: rgba(2, 4, 8, 0.95);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+            padding: .5rem 1rem
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .25rem;
+            min-width: 56px;
+            height: 28px;
+            border-radius: .25rem;
+            cursor: pointer;
+            font-size: .6rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            transition: all .12s;
+            border: 1px solid;
+            user-select: none;
+            position: relative
+        }
+
+        .live-badge:hover {
+            transform: scale(1.08);
+            z-index: 5
+        }
+
+        .live-badge.is-override {
+            border-style: dashed;
+            animation: overridePulse 2s infinite
+        }
+
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 70px;
+            height: 24px;
+            border-radius: .25rem;
+            cursor: pointer;
+            font-size: .55rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            transition: all .12s;
+            border: 1px solid;
+            user-select: none;
+            position: relative;
+            padding: 0 .4rem
+        }
+
+        .role-badge:hover {
+            transform: scale(1.06);
+            z-index: 5
+        }
+
+        .role-badge.is-override {
+            border-style: dashed;
+            animation: overridePulse 2s infinite
+        }
+
+        @keyframes overridePulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0)
+            }
+
+            50% {
+                box-shadow: 0 0 8px 2px rgba(245, 158, 11, 0.15)
+            }
+        }
+
+        .inline-dd {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 45;
+            background: rgba(10, 20, 30, 0.97);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: .375rem;
+            min-width: 140px;
+            max-height: 220px;
+            overflow-y: auto;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .7)
+        }
+
+        .inline-dd .dd-opt {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: .45rem .65rem;
+            font-size: .65rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: background .15s;
+            border: none;
+            background: none;
+            white-space: nowrap
+        }
+
+        .inline-dd .dd-opt:hover {
+            background: rgba(212, 175, 55, 0.08);
+            color: #d4af37
+        }
+
+        .inline-dd .dd-opt.destructive {
+            color: #f87171
+        }
+
+        .inline-dd .dd-opt.destructive:hover {
+            background: rgba(248, 113, 113, 0.08)
+        }
+
+        .inline-dd .dd-opt.disabled {
+            color: #4b5563;
+            cursor: default;
+            pointer-events: none;
+            font-style: italic
+        }
+
+        .inline-dd .dd-sep {
+            border-top: 1px solid rgba(255, 255, 255, 0.05)
+        }
+    </style>
+</head>
+
+<body class="font-inter p-6 space-y-5 h-screen overflow-y-auto pb-24 relative" style="background:#020408">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
+                <i data-lucide="calendar-clock" class="w-6 h-6 mr-3"></i> Workforce Roster & Deployment
+            </h3>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Shift Dictionary · Base Pattern · Live
+                Command</p>
+        </div>
+    </div>
+
+    <!-- GLOBAL SHIFT DICTIONARY -->
+    <div class="glass-panel rounded-lg p-4">
+        <div class="flex items-center justify-between mb-3">
+            <h4 class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">Global Shift Dictionary</h4>
+            <button onclick="openShiftDictModal(null)"
+                class="flex items-center gap-1 text-xs text-gold hover:text-yellow-300 transition-colors font-semibold">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Shift
+            </button>
+        </div>
+        <div class="flex flex-wrap gap-2" id="shift-pills-container"></div>
+    </div>
+
+    <!-- VIEW TABS -->
+    <div class="flex items-center gap-2">
+        <button class="view-tab active" id="vtab-pattern" onclick="switchView('pattern')">
+            <i data-lucide="table-2" class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5"></i>Default Weekly Pattern
+        </button>
+        <button class="view-tab" id="vtab-live" onclick="switchView('live')">
+            <i data-lucide="radio" class="w-3.5 h-3.5 inline mr-1.5 -mt-0.5"></i>Live Daily Command
+        </button>
+    </div>
+
+    <!-- VIEW 1: DEFAULT WEEKLY PATTERN -->
+    <div id="view-pattern">
+        <div class="glass-panel rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-[#010204]">
+                <h4 class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    default_weekly_patterns
+                </h4>
+                <span class="text-[10px] text-gray-600" id="matrix-stats"></span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead
+                        class="text-[10px] text-gray-500 uppercase tracking-wider bg-[#010204] sticky top-0 z-10 border-b border-white/10">
+                        <tr>
+                            <th class="px-4 py-3 font-semibold w-52 min-w-[200px]">Employee</th>
+                            <th class="px-2 py-3 font-semibold text-center w-16">Mon</th>
+                            <th class="px-2 py-3 font-semibold text-center w-16">Tue</th>
+                            <th class="px-2 py-3 font-semibold text-center w-16">Wed</th>
+                            <th class="px-2 py-3 font-semibold text-center w-16">Thu</th>
+                            <th class="px-2 py-3 font-semibold text-center w-16">Fri</th>
+                            <th class="px-2 py-3 font-semibold text-center w-16">Sat</th>
+                            <th class="px-2 py-3 font-semibold text-center w-16">Sun</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matrix-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 2: LIVE DAILY COMMAND -->
+    <div id="view-live" class="hidden">
+        <div class="glass-panel rounded-lg p-4 flex items-end gap-4 mb-4">
+            <div class="flex-1 max-w-xs">
+                <label class="form-label">Operational Date</label>
+                <input type="date" id="live-date" class="form-input" onchange="renderLiveView()">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="stepLiveDate(-1)"
+                    class="px-3 py-2 rounded border border-white/10 text-gray-400 hover:text-gold hover:border-gold/30 transition-all text-sm"><i
+                        data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                <button onclick="setLiveToday()"
+                    class="px-3 py-2 rounded border border-white/10 text-gray-400 hover:text-gold hover:border-gold/30 transition-all text-xs font-semibold uppercase tracking-wider">Today</button>
+                <button onclick="stepLiveDate(1)"
+                    class="px-3 py-2 rounded border border-white/10 text-gray-400 hover:text-gold hover:border-gold/30 transition-all text-sm"><i
+                        data-lucide="chevron-right" class="w-4 h-4"></i></button>
+            </div>
+            <div class="text-right flex-shrink-0">
+                <div class="text-xs text-gray-400" id="live-day-label"></div>
+                <div class="text-[10px] text-gray-600" id="live-override-count"></div>
+            </div>
+        </div>
+        <div class="glass-panel rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-[#010204]">
+                <h4 class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    daily_shift_overrides — resolved view
+                </h4>
+                <div class="flex items-center gap-3 text-[9px] text-gray-500">
+                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-500/50"></span>
+                        Default</span>
+                    <span class="flex items-center gap-1"><span
+                            class="w-2 h-2 rounded-full bg-amber-500/50 border border-dashed border-amber-500/50"></span>
+                        Override</span>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead
+                        class="text-[10px] text-gray-500 uppercase tracking-wider bg-[#010204] sticky top-0 z-10 border-b border-white/10">
+                        <tr>
+                            <th class="px-4 py-3 font-semibold w-48 min-w-[180px]">Employee</th>
+                            <th class="px-3 py-3 font-semibold text-center w-24">Default Shift</th>
+                            <th class="px-3 py-3 font-semibold text-center w-24">Resolved Shift</th>
+                            <th class="px-3 py-3 font-semibold text-center w-36">Deployed Role</th>
+                            <th class="px-3 py-3 font-semibold text-center w-28">Source</th>
+                        </tr>
+                    </thead>
+                    <tbody id="live-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHIFT DICT MODAL -->
+    <div id="modal-shift-dict" class="modal-overlay hidden">
+        <div class="glass-panel rounded-lg w-full max-w-sm border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)]">
+            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg">
+                <h3 class="font-cinzel text-lg text-gold flex items-center tracking-wider" id="shift-dict-title">
+                    <i data-lucide="clock" class="w-5 h-5 mr-2"></i> Add Shift
+                </h3>
+                <button onclick="closeModal('modal-shift-dict')"
+                    class="text-gray-400 hover:text-white transition-colors"><i data-lucide="x"
+                        class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="dict-edit-id" value="">
+                <div><label class="form-label">Shift Code</label><input type="text" id="dict-code" class="form-input"
+                        placeholder="e.g. MOR" maxlength="4" style="text-transform:uppercase"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="form-label">Start Time</label><input type="time" id="dict-start"
+                            class="form-input"></div>
+                    <div><label class="form-label">End Time</label><input type="time" id="dict-end" class="form-input">
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Color</label>
+                    <div class="flex items-center gap-2">
+                        <input type="color" id="dict-color" value="#38bdf8"
+                            class="w-8 h-8 rounded cursor-pointer border border-white/10 bg-transparent">
+                        <span id="dict-color-hex" class="text-xs text-gray-400 font-mono">#38bdf8</span>
+                    </div>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button onclick="saveShiftDict()"
+                        class="px-6 py-2.5 text-sm font-bold rounded bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space shadow-[0_0_15px_rgba(212,175,55,0.3)] transition-all">Save
+                        Shift</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"
+        class="fixed bottom-8 right-8 bg-space border-l-4 border-l-gold border-y border-y-white/10 border-r border-r-white/10 text-white px-6 py-4 rounded-lg shadow-xl backdrop-blur-md text-sm font-semibold flex items-center space-x-3 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-[60]">
+        <i data-lucide="info" class="w-5 h-5 text-gold"></i><span id="toast-msg"></span>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ═══════════════════════════════════════
+        // DATA
+        // ═══════════════════════════════════════
+        const ROLES = {
+            it_admin: 'IT Admin', business_admin: 'Business Admin',
+            fnb_manager: 'F&B Manager', merch_manager: 'Merch Manager', maintenance_manager: 'Maintenance Manager',
+            inventory_manager: 'Inventory Manager', marketing_manager: 'Marketing Manager',
+            human_resources_manager: 'HR Manager', compliance_manager: 'Compliance Manager', operations_manager: 'Operations Manager',
+            fnb_crew: 'F&B Crew', service_crew: 'Service Crew', giftshop_crew: 'Giftshop Crew',
+            runner_crew: 'Runner Crew', security_crew: 'Security Crew', health_crew: 'Health Crew',
+            cleaning_crew: 'Cleaning Crew', experience_crew: 'Experience Crew', internal_maintainence_crew: 'Internal Maintenance Crew'
+        };
+
+        const ROLE_GROUPS = {
+            'ADMIN': ['it_admin', 'business_admin'],
+            'MANAGEMENT': ['fnb_manager', 'merch_manager', 'maintenance_manager', 'inventory_manager', 'marketing_manager', 'human_resources_manager', 'compliance_manager', 'operations_manager'],
+            'CREW': ['fnb_crew', 'service_crew', 'giftshop_crew', 'runner_crew', 'security_crew', 'health_crew', 'cleaning_crew', 'experience_crew', 'internal_maintainence_crew']
+        };
+
+        const employees = [
+            { id: 'EMP-8F2A3B91', name: 'Ahmad Razif bin Harun', role: 'fnb_crew', status: 'active', startDate: '2024-03-15', endDate: null },
+            { id: 'EMP-1D4E6F78', name: 'Chen Wei Lin', role: 'security_crew', status: 'active', startDate: '2023-11-01', endDate: '2025-10-31' },
+            { id: 'EMP-9A2B3C4D', name: 'Nur Aisyah binti Osman', role: 'giftshop_crew', status: 'active', startDate: '2024-06-01', endDate: null },
+            { id: 'EMP-5E6F7A8B', name: 'Rajesh Krishnan', role: 'health_crew', status: 'active', startDate: '2023-05-20', endDate: null },
+            { id: 'EMP-2C3D4E5F', name: 'Sarah Johnson', role: 'experience_crew', status: 'terminated', startDate: '2024-01-10', endDate: '2024-12-31' },
+            { id: 'EMP-7G8H9I0J', name: 'Muhammad Irfan', role: 'internal_maintainence_crew', status: 'active', startDate: '2024-08-15', endDate: null },
+            { id: 'EMP-3K4L5M6N', name: 'Tan Siew Ling', role: 'fnb_manager', status: 'pending', startDate: '2023-09-01', endDate: null },
+            { id: 'EMP-8O9P0Q1R', name: 'Amirul Hakim', role: 'security_crew', status: 'active', startDate: '2024-04-01', endDate: '2026-03-31' },
+            { id: 'EMP-2S3T4U5V', name: 'Kavitha Murugan', role: 'runner_crew', status: 'suspended', startDate: '2024-02-14', endDate: null },
+            { id: 'EMP-6W7X8Y9Z', name: 'Lee Jia Hao', role: 'it_admin', status: 'active', startDate: '2023-12-01', endDate: null },
+            { id: 'EMP-0A1B2C3D', name: 'Fatimah binti Abdullah', role: 'cleaning_crew', status: 'active', startDate: '2024-07-01', endDate: null },
+            { id: 'EMP-4E5F6G7H', name: 'Vikram Singh', role: 'operations_manager', status: 'active', startDate: '2024-09-15', endDate: '2025-09-14' },
+            { id: 'EMP-F1G2H3I4', name: 'Zainab Kamil', role: 'fnb_crew', status: 'active', startDate: '2024-01-05', endDate: null },
+            { id: 'EMP-J5K6L7M8', name: 'Daniel Lim', role: 'service_crew', status: 'active', startDate: '2024-05-10', endDate: null },
+            { id: 'EMP-N9O0P1Q2', name: 'Priya Devi', role: 'giftshop_crew', status: 'active', startDate: '2024-03-20', endDate: null },
+            { id: 'EMP-R3S4T5U6', name: 'Hafiz bin Razak', role: 'fnb_crew', status: 'active', startDate: '2024-02-01', endDate: null },
+            { id: 'EMP-V7W8X9Y0', name: 'Mei Ling Tan', role: 'service_crew', status: 'active', startDate: '2024-06-15', endDate: null },
+        ];
+
+        const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+        // ═══════════════════════════════════════
+        // SHIFT DICTIONARY
+        // ═══════════════════════════════════════
+        let shiftDict = [
+            { id: 'sd1', code: 'MOR', start: '07:00', end: '15:00', color: '#38bdf8' },
+            { id: 'sd2', code: 'EVE', start: '15:00', end: '23:00', color: '#a78bfa' },
+            { id: 'sd3', code: 'NIG', start: '23:00', end: '07:00', color: '#f87171' },
+        ];
+
+        function getShift(code) { return shiftDict.find(s => s.code === code); }
+
+        function renderShiftPills() {
+            const c = document.getElementById('shift-pills-container');
+            c.innerHTML = '';
+            if (shiftDict.length === 0) { c.innerHTML = '<span class="text-xs text-gray-600 italic">No shifts defined. Add one to get started.</span>'; return; }
+            shiftDict.forEach(s => {
+                const pill = document.createElement('div');
+                pill.className = 'shift-pill';
+                pill.style.background = s.color + '18'; pill.style.color = s.color; pill.style.borderColor = s.color + '40';
+                pill.onclick = () => openShiftDictModal(s.id);
+                pill.innerHTML = `<span class="font-mono">${s.code}</span><span class="text-[9px] opacity-60">${s.start}–${s.end}</span><span class="pill-delete" onclick="event.stopPropagation();deleteShiftDict('${s.id}')">&times;</span>`;
+                c.appendChild(pill);
+            });
+        }
+
+        function openShiftDictModal(editId) {
+            if (editId) {
+                const s = shiftDict.find(x => x.id === editId); if (!s) return;
+                document.getElementById('shift-dict-title').innerHTML = '<i data-lucide="clock" class="w-5 h-5 mr-2"></i> Edit Shift';
+                document.getElementById('dict-edit-id').value = editId;
+                document.getElementById('dict-code').value = s.code;
+                document.getElementById('dict-start').value = s.start;
+                document.getElementById('dict-end').value = s.end;
+                document.getElementById('dict-color').value = s.color;
+                document.getElementById('dict-color-hex').textContent = s.color;
+            } else {
+                document.getElementById('shift-dict-title').innerHTML = '<i data-lucide="clock" class="w-5 h-5 mr-2"></i> Add Shift';
+                document.getElementById('dict-edit-id').value = '';
+                ['dict-code', 'dict-start', 'dict-end'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('dict-color').value = '#38bdf8';
+                document.getElementById('dict-color-hex').textContent = '#38bdf8';
+            }
+            document.getElementById('modal-shift-dict').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        document.getElementById('dict-color').addEventListener('input', e => {
+            document.getElementById('dict-color-hex').textContent = e.target.value;
+        });
+
+        function saveShiftDict() {
+            const code = document.getElementById('dict-code').value.trim().toUpperCase();
+            const start = document.getElementById('dict-start').value;
+            const end = document.getElementById('dict-end').value;
+            const color = document.getElementById('dict-color').value;
+            const editId = document.getElementById('dict-edit-id').value;
+            if (!code || !start || !end) { showToast('All fields are required.'); return; }
+            if (shiftDict.find(s => s.code === code && s.id !== editId)) { showToast('Code "' + code + '" already exists.'); return; }
+            if (editId) { const s = shiftDict.find(x => x.id === editId); if (s) { s.code = code; s.start = start; s.end = end; s.color = color; } }
+            else { shiftDict.push({ id: 'sd' + Date.now(), code, start, end, color }); }
+            closeModal('modal-shift-dict');
+            renderShiftPills(); renderMatrix(); renderLiveView();
+            showToast(`Shift "${code}" saved.`);
+        }
+
+        function deleteShiftDict(id) {
+            const s = shiftDict.find(x => x.id === id); if (!s) return;
+            Object.keys(defaultPatterns).forEach(eid => { DAYS.forEach(d => { if (defaultPatterns[eid]?.[d] === s.code) defaultPatterns[eid][d] = null; }); });
+            shiftDict = shiftDict.filter(x => x.id !== id);
+            renderShiftPills(); renderMatrix(); renderLiveView();
+            showToast(`Shift "${s.code}" deleted.`);
+        }
+
+        // ═══════════════════════════════════════
+        // VIEW 1: DEFAULT WEEKLY PATTERNS
+        // ═══════════════════════════════════════
+        let defaultPatterns = {};
+
+        function initPatterns() {
+            employees.filter(e => e.status === 'active').forEach((emp, i) => {
+                defaultPatterns[emp.id] = {};
+                DAYS.forEach(d => defaultPatterns[emp.id][d] = null);
+                if (i % 3 === 0) { ['mon', 'tue', 'wed', 'thu', 'fri'].forEach(d => defaultPatterns[emp.id][d] = 'MOR'); }
+                else if (i % 3 === 1) { ['mon', 'tue', 'wed', 'thu', 'fri'].forEach(d => defaultPatterns[emp.id][d] = 'EVE'); }
+                else { defaultPatterns[emp.id].mon = 'MOR'; defaultPatterns[emp.id].wed = 'EVE'; defaultPatterns[emp.id].fri = 'MOR'; defaultPatterns[emp.id].sat = 'MOR'; }
+            });
+        }
+
+        function isBlocked(emp) { return emp.status === 'suspended' || emp.status === 'terminated'; }
+
+        function renderMatrix() {
+            const tbody = document.getElementById('matrix-body');
+            tbody.innerHTML = '';
+            const activeEmps = employees.filter(e => e.status === 'active');
+            const groups = {};
+            activeEmps.forEach(emp => { if (!groups[emp.role]) groups[emp.role] = []; groups[emp.role].push(emp); });
+
+            let totalAssigned = 0, totalCells = 0;
+
+            Object.keys(ROLES).forEach(role => {
+                if (!groups[role] || !groups[role].length) return;
+                const emps = groups[role];
+                const hTr = document.createElement('tr');
+                hTr.innerHTML = `<td colspan="8" class="role-group-header"><div class="flex items-center gap-2">
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gold/60"></i>
+                    <span class="text-xs font-bold text-gold/80 uppercase tracking-wider">${ROLES[role]}</span>
+                    <span class="text-[10px] text-gray-500 font-mono ml-1">${emps.length} staff</span>
+                </div></td>`;
+                tbody.appendChild(hTr);
+
+                emps.forEach(emp => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-white/[0.03] hover:bg-white/[0.04] transition-colors';
+                    const blocked = isBlocked(emp);
+
+                    let html = `<td class="px-4 py-2">
+                        <div class="text-xs text-white font-medium ${blocked ? 'line-through opacity-40' : ''}">${emp.name}</div>
+                        <div class="text-[10px] text-gray-500 font-mono">${emp.id.substring(0, 12)}…</div>
+                    </td>`;
+
+                    DAYS.forEach(day => {
+                        const code = defaultPatterns[emp.id]?.[day] || null;
+                        const sd = code ? getShift(code) : null;
+                        totalCells++;
+                        if (sd) totalAssigned++;
+                        const bg = sd ? sd.color + '18' : 'transparent';
+                        const clr = sd ? sd.color : '#4b5563';
+                        const lbl = sd ? sd.code : 'OFF';
+                        const cellId = `mc-${emp.id}-${day}`;
+                        html += `<td class="px-1 py-1.5 text-center">
+                            <div class="matrix-cell ${sd ? '' : 'off'} ${blocked ? 'blocked' : ''}" id="${cellId}" style="background:${bg};color:${clr}"
+                                onclick="${blocked ? '' : `event.stopPropagation();openMatrixDropdown('${emp.id}','${day}','${cellId}')`}">
+                                ${lbl}
+                            </div>
+                        </td>`;
+                    });
+
+                    tr.innerHTML = html;
+                    tbody.appendChild(tr);
+                });
+            });
+            document.getElementById('matrix-stats').textContent = `${totalAssigned} / ${totalCells} cells assigned`;
+            lucide.createIcons();
+        }
+
+        function openMatrixDropdown(empId, day, cellId) {
+            closeAllDropdowns();
+            const cell = document.getElementById(cellId);
+            if (!cell) return;
+            const currentCode = defaultPatterns[empId]?.[day] || null;
+
+            const dd = document.createElement('div');
+            dd.className = 'inline-dd';
+            dd.setAttribute('data-dd', 'true');
+            dd.onclick = e => e.stopPropagation();
+
+            if (shiftDict.length === 0) {
+                const d = document.createElement('div');
+                d.className = 'dd-opt disabled';
+                d.textContent = 'No shifts defined. Add to dictionary.';
+                dd.appendChild(d);
+            } else {
+                shiftDict.forEach(s => {
+                    const btn = document.createElement('button');
+                    btn.className = 'dd-opt' + (s.code === currentCode ? ' !text-gold font-bold' : '');
+                    btn.innerHTML = `<span class="inline-block w-2 h-2 rounded-full mr-1.5" style="background:${s.color}"></span><span class="font-mono font-bold mr-1">${s.code}</span>${s.start}–${s.end}`;
+                    btn.onclick = () => { setPattern(empId, day, s.code); closeAllDropdowns(); };
+                    dd.appendChild(btn);
+                });
+                const sep = document.createElement('div');
+                sep.className = 'dd-sep';
+                dd.appendChild(sep);
+                const offBtn = document.createElement('button');
+                offBtn.className = 'dd-opt destructive' + (currentCode === null ? ' !text-gold font-bold' : '');
+                offBtn.innerHTML = '<span class="inline-block w-2 h-2 rounded-full mr-1.5 bg-gray-600"></span>OFF (Day off)';
+                offBtn.onclick = () => { setPattern(empId, day, null); closeAllDropdowns(); };
+                dd.appendChild(offBtn);
+            }
+
+            cell.appendChild(dd);
+        }
+
+        function setPattern(empId, day, code) {
+            if (!defaultPatterns[empId]) defaultPatterns[empId] = {};
+            defaultPatterns[empId][day] = code;
+            simulateAPI('PUT', '/api/v1/hr/roster/pattern', { empId, day, shift: code });
+            renderMatrix();
+            renderLiveView();
+        }
+
+        // ═══════════════════════════════════════
+        // VIEW 2: LIVE DAILY COMMAND
+        // ═══════════════════════════════════════
+        // overrides: { 'YYYY-MM-DD': { empId: { shift: 'MOR'|'__OFF__'|null, role: 'runner_crew'|null } } }
+        let overrides = {};
+
+        function switchView(v) {
+            document.getElementById('view-pattern').classList.toggle('hidden', v !== 'pattern');
+            document.getElementById('view-live').classList.toggle('hidden', v !== 'live');
+            document.getElementById('vtab-pattern').classList.toggle('active', v === 'pattern');
+            document.getElementById('vtab-live').classList.toggle('active', v === 'live');
+            if (v === 'live') renderLiveView();
+        }
+
+        function getLiveDate() { return document.getElementById('live-date').value; }
+        function setLiveToday() { document.getElementById('live-date').value = dateStr(new Date()); renderLiveView(); }
+        function stepLiveDate(dir) {
+            const cur = getLiveDate();
+            if (!cur) { setLiveToday(); return; }
+            const d = new Date(cur + 'T00:00:00'); d.setDate(d.getDate() + dir);
+            document.getElementById('live-date').value = dateStr(d); renderLiveView();
+        }
+
+        function renderLiveView() {
+            const ds = getLiveDate(); if (!ds) return;
+            const dayKey = DAYS[(new Date(ds + 'T00:00:00').getDay() + 6) % 7];
+            const d = new Date(ds + 'T00:00:00');
+            document.getElementById('live-day-label').textContent = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+            const tbody = document.getElementById('live-body');
+            tbody.innerHTML = '';
+            const activeEmps = employees.filter(e => e.status === 'active');
+            const groups = {};
+            activeEmps.forEach(emp => { if (!groups[emp.role]) groups[emp.role] = []; groups[emp.role].push(emp); });
+
+            let overrideCount = 0;
+
+            Object.keys(ROLES).forEach(role => {
+                if (!groups[role] || !groups[role].length) return;
+                const hTr = document.createElement('tr');
+                hTr.innerHTML = `<td colspan="5" class="role-group-header"><div class="flex items-center gap-2">
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gold/60"></i>
+                    <span class="text-xs font-bold text-gold/80 uppercase tracking-wider">${ROLES[role]}</span>
+                    <span class="text-[10px] text-gray-500 font-mono ml-1">${groups[role].length} staff</span>
+                </div></td>`;
+                tbody.appendChild(hTr);
+
+                groups[role].forEach(emp => {
+                    const ov = overrides[ds]?.[emp.id] || null;
+                    const hasShiftOv = ov && ov.shift !== undefined && ov.shift !== null;
+                    const hasRoleOv = ov && ov.role !== undefined && ov.role !== null;
+                    if (hasShiftOv || hasRoleOv) overrideCount++;
+
+                    const defaultCode = defaultPatterns[emp.id]?.[dayKey] || null;
+                    let resolvedCode;
+                    if (hasShiftOv) { resolvedCode = ov.shift === '__OFF__' ? null : ov.shift; }
+                    else { resolvedCode = defaultCode; }
+                    const isOff = hasShiftOv && ov.shift === '__OFF__';
+
+                    const resolvedRole = hasRoleOv ? ov.role : emp.role;
+
+                    const defShift = defaultCode ? getShift(defaultCode) : null;
+                    const resShift = resolvedCode ? getShift(resolvedCode) : null;
+
+                    // Default badge
+                    const defBg = defShift ? defShift.color + '15' : 'transparent';
+                    const defClr = defShift ? defShift.color : '#4b5563';
+                    const defLbl = defShift ? defShift.code : 'OFF';
+
+                    // Resolved shift badge
+                    let resBg, resClr, resLbl, resBorder;
+                    if (isOff) { resBg = 'rgba(239,68,68,0.08)'; resClr = '#f87171'; resLbl = 'OFF'; resBorder = 'rgba(239,68,68,0.3)'; }
+                    else if (resShift && hasShiftOv) { resBg = 'rgba(245,158,11,0.12)'; resClr = '#f59e0b'; resLbl = resShift.code; resBorder = 'rgba(245,158,11,0.4)'; }
+                    else if (resShift) { resBg = resShift.color + '15'; resClr = resShift.color; resLbl = resShift.code; resBorder = resShift.color + '30'; }
+                    else { resBg = 'transparent'; resClr = '#4b5563'; resLbl = 'OFF'; resBorder = 'rgba(255,255,255,0.05)'; }
+
+                    // Deployed role badge
+                    let roleBg, roleClr, roleBorder, roleLbl;
+                    roleLbl = ROLES[resolvedRole] || resolvedRole;
+                    if (hasRoleOv) {
+                        roleBg = 'rgba(245,158,11,0.12)'; roleClr = '#f59e0b'; roleBorder = 'rgba(245,158,11,0.4)';
+                    } else {
+                        roleBg = 'rgba(255,255,255,0.03)'; roleClr = '#9ca3af'; roleBorder = 'rgba(255,255,255,0.08)';
+                    }
+
+                    // Source
+                    let sourceFlags = [];
+                    if (hasShiftOv) sourceFlags.push('SHIFT');
+                    if (hasRoleOv) sourceFlags.push('ROLE');
+                    let sourceHTML;
+                    if (sourceFlags.length > 0) {
+                        sourceHTML = `<span class="text-[9px] font-semibold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">${sourceFlags.join(' + ')} OVERRIDE</span>`;
+                    } else {
+                        sourceHTML = '<span class="text-[9px] text-gray-600">default</span>';
+                    }
+
+                    const shiftCellId = `ls-${emp.id}`;
+                    const roleCellId = `lr-${emp.id}`;
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-white/[0.03] hover:bg-white/[0.04] transition-colors';
+                    tr.innerHTML = `
+                        <td class="px-4 py-2">
+                            <div class="text-xs text-white font-medium">${emp.name}</div>
+                            <div class="text-[10px] text-gray-500 font-mono">${emp.id.substring(0, 12)}…</div>
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <span class="inline-flex items-center justify-center min-w-[48px] h-[24px] rounded text-[10px] font-bold" style="background:${defBg};color:${defClr}">${defLbl}</span>
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <div class="inline-block relative" id="${shiftCellId}">
+                                <div class="live-badge ${hasShiftOv ? 'is-override' : ''}" style="background:${resBg};color:${resClr};border-color:${resBorder}"
+                                    onclick="event.stopPropagation();openLiveShiftDD('${emp.id}','${ds}','${dayKey}','${shiftCellId}')">
+                                    ${resLbl}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 py-2 text-center">
+                            <div class="inline-block relative" id="${roleCellId}">
+                                <div class="role-badge ${hasRoleOv ? 'is-override' : ''}" style="background:${roleBg};color:${roleClr};border-color:${roleBorder}"
+                                    onclick="event.stopPropagation();openLiveRoleDD('${emp.id}','${ds}','${roleCellId}')">
+                                    ${roleLbl}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3 py-2 text-center">${sourceHTML}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+
+            document.getElementById('live-override-count').textContent = overrideCount > 0 ? `${overrideCount} active override(s)` : 'No overrides';
+            lucide.createIcons();
+        }
+
+        // ── Live Shift Dropdown ──
+        function openLiveShiftDD(empId, ds, dayKey, cellId) {
+            closeAllDropdowns();
+            const container = document.getElementById(cellId);
+            if (!container) return;
+
+            const ov = overrides[ds]?.[empId];
+            const currentResolved = ov?.shift !== undefined ? ov.shift : (defaultPatterns[empId]?.[dayKey] || null);
+
+            const dd = document.createElement('div');
+            dd.className = 'inline-dd';
+            dd.setAttribute('data-dd', 'true');
+            dd.onclick = e => e.stopPropagation();
+
+            if (shiftDict.length === 0) {
+                dd.innerHTML = '<div class="dd-opt disabled">No shifts defined. Add to dictionary.</div>';
+            } else {
+                shiftDict.forEach(s => {
+                    const btn = document.createElement('button');
+                    const isCurrent = s.code === currentResolved;
+                    btn.className = 'dd-opt' + (isCurrent ? ' !text-gold font-bold' : '');
+                    btn.innerHTML = `<span class="inline-block w-2 h-2 rounded-full mr-1.5" style="background:${s.color}"></span><span class="font-mono font-bold mr-1">${s.code}</span>${s.start}–${s.end}`;
+                    btn.onclick = () => { applyShiftOverride(empId, ds, s.code); };
+                    dd.appendChild(btn);
+                });
+                const sep = document.createElement('div'); sep.className = 'dd-sep'; dd.appendChild(sep);
+                const offBtn = document.createElement('button');
+                offBtn.className = 'dd-opt destructive';
+                offBtn.innerHTML = '<span class="inline-block w-2 h-2 rounded-full mr-1.5 bg-gray-600"></span>Mark OFF (Absence)';
+                offBtn.onclick = () => { applyShiftOverride(empId, ds, '__OFF__'); };
+                dd.appendChild(offBtn);
+            }
+
+            // Reset to default option
+            if (ov?.shift !== undefined) {
+                const sep2 = document.createElement('div'); sep2.className = 'dd-sep'; dd.appendChild(sep2);
+                const resetBtn = document.createElement('button');
+                resetBtn.className = 'dd-opt';
+                resetBtn.innerHTML = '<i data-lucide="rotate-ccw" class="w-3 h-3 inline mr-1 -mt-0.5"></i> Reset to Default';
+                resetBtn.onclick = () => { clearShiftOverride(empId, ds); };
+                dd.appendChild(resetBtn);
+            }
+
+            container.appendChild(dd);
+            lucide.createIcons();
+            requestAnimationFrame(() => document.addEventListener('click', globalCloseHandler));
+        }
+
+        function applyShiftOverride(empId, ds, shiftCode) {
+            if (!overrides[ds]) overrides[ds] = {};
+            if (!overrides[ds][empId]) overrides[ds][empId] = {};
+            overrides[ds][empId].shift = shiftCode;
+            closeAllDropdowns();
+            simulateAPI('POST', '/api/v1/hr/roster/override', { empId, date: ds, shift: shiftCode });
+            renderLiveView();
+            showToast(`Shift override applied: ${shiftCode === '__OFF__' ? 'OFF' : shiftCode}`);
+        }
+
+        function clearShiftOverride(empId, ds) {
+            if (overrides[ds]?.[empId]) {
+                delete overrides[ds][empId].shift;
+                if (!overrides[ds][empId].role) { delete overrides[ds][empId]; if (!Object.keys(overrides[ds]).length) delete overrides[ds]; }
+            }
+            closeAllDropdowns();
+            renderLiveView();
+            showToast('Shift override cleared.');
+        }
+
+        // ── Live Role Dropdown ──
+        function openLiveRoleDD(empId, ds, cellId) {
+            closeAllDropdowns();
+            const container = document.getElementById(cellId);
+            if (!container) return;
+
+            const emp = employees.find(e => e.id === empId);
+            const ov = overrides[ds]?.[empId];
+            const currentRole = ov?.role || emp.role;
+
+            const dd = document.createElement('div');
+            dd.className = 'inline-dd';
+            dd.style.minWidth = '180px';
+            dd.setAttribute('data-dd', 'true');
+            dd.onclick = e => e.stopPropagation();
+
+            for (const [groupName, roleKeys] of Object.entries(ROLE_GROUPS)) {
+                const header = document.createElement('div');
+                header.className = 'px-2.5 py-1 text-[9px] font-bold text-gray-500 uppercase tracking-wider bg-white/[0.02]';
+                header.textContent = groupName;
+                dd.appendChild(header);
+
+                roleKeys.forEach(rk => {
+                    const btn = document.createElement('button');
+                    const isCurrent = rk === currentRole;
+                    btn.className = 'dd-opt' + (isCurrent ? ' !text-gold font-bold' : '');
+                    btn.textContent = ROLES[rk];
+                    btn.onclick = () => {
+                        if (rk === emp.role) { clearRoleOverride(empId, ds); }
+                        else { applyRoleOverride(empId, ds, rk); }
+                    };
+                    dd.appendChild(btn);
+                });
+            }
+
+            if (ov?.role) {
+                const sep = document.createElement('div'); sep.className = 'dd-sep'; dd.appendChild(sep);
+                const resetBtn = document.createElement('button');
+                resetBtn.className = 'dd-opt';
+                resetBtn.innerHTML = '<i data-lucide="rotate-ccw" class="w-3 h-3 inline mr-1 -mt-0.5"></i> Reset to Contract Role';
+                resetBtn.onclick = () => { clearRoleOverride(empId, ds); };
+                dd.appendChild(resetBtn);
+            }
+
+            container.appendChild(dd);
+            lucide.createIcons();
+            requestAnimationFrame(() => document.addEventListener('click', globalCloseHandler));
+        }
+
+        function applyRoleOverride(empId, ds, roleKey) {
+            if (!overrides[ds]) overrides[ds] = {};
+            if (!overrides[ds][empId]) overrides[ds][empId] = {};
+            overrides[ds][empId].role = roleKey;
+            closeAllDropdowns();
+            simulateAPI('POST', '/api/v1/hr/roster/override', { empId, date: ds, role: roleKey });
+            renderLiveView();
+            showToast(`Role override: ${ROLES[roleKey]}`);
+        }
+
+        function clearRoleOverride(empId, ds) {
+            if (overrides[ds]?.[empId]) {
+                delete overrides[ds][empId].role;
+                if (!overrides[ds][empId].shift) { delete overrides[ds][empId]; if (!Object.keys(overrides[ds]).length) delete overrides[ds]; }
+            }
+            closeAllDropdowns();
+            renderLiveView();
+            showToast('Role override cleared.');
+        }
+
+        // ═══════════════════════════════════════
+        // DROPDOWN MANAGEMENT
+        // ═══════════════════════════════════════
+        function closeAllDropdowns() {
+            document.querySelectorAll('.inline-dd').forEach(d => d.remove());
+            document.removeEventListener('click', globalCloseHandler);
+        }
+
+        function globalCloseHandler(e) {
+            if (!e.target.closest('[data-dd]')) {
+                closeAllDropdowns();
+            }
+        }
+
+        // ═══════════════════════════════════════
+        // UTILITIES
+        // ═══════════════════════════════════════
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            t.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => t.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none'), 3500);
+        }
+        function dateStr(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+        function simulateAPI(method, endpoint, payload) { console.log(`%c[API] ${method} ${endpoint}`, 'color: #d4af37; font-weight: bold', payload); }
+
+        // ═══════════════════════════════════════
+        // INIT
+        // ═══════════════════════════════════════
+        document.addEventListener('DOMContentLoaded', () => {
+            initPatterns();
+            renderShiftPills();
+            renderMatrix();
+            document.getElementById('live-date').value = dateStr(new Date());
+            renderLiveView();
+        });
+    </script>
+</body>
+
+</html>

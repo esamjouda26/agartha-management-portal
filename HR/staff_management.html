@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Orbitron:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { space: '#020408', panel: 'rgba(10, 20, 30, 0.7)', gold: '#d4af37', bronze: '#806b45' },
+                    fontFamily: { cinzel: ['Cinzel', 'serif'], inter: ['Inter', 'sans-serif'], orbitron: ['Orbitron', 'sans-serif'], mono: ['Fira Code', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.2);
+            border-radius: 3px
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.5)
+        }
+
+        .glass-panel {
+            background-color: rgba(10, 20, 30, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5)
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d4af37' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right .5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em
+        }
+
+        body {
+            background-color: transparent;
+            color: #e2e8f0
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 4, 8, 0.8);
+            backdrop-filter: blur(4px);
+            overflow-y: auto;
+            padding: 2rem 1rem
+        }
+
+        .modal-overlay.hidden {
+            display: none
+        }
+
+        .section-header {
+            font-family: 'Cinzel', serif;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .15em;
+            color: #d4af37;
+            padding-bottom: .5rem;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+            margin-bottom: .75rem
+        }
+
+        .form-label {
+            display: block;
+            font-size: .65rem;
+            color: rgba(156, 163, 175, 1);
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            font-weight: 600;
+            margin-bottom: .25rem
+        }
+
+        .form-input {
+            width: 100%;
+            background: #020408;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: .375rem;
+            font-size: .8rem;
+            color: #fff;
+            padding: .5rem .75rem;
+            transition: border-color .2s
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: rgba(212, 175, 55, 0.5)
+        }
+
+        .form-input:read-only {
+            opacity: .6;
+            cursor: not-allowed
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: .6rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: .2rem .55rem;
+            border-radius: 9999px;
+            border: 1px solid;
+            white-space: nowrap
+        }
+
+        .status-active {
+            background: rgba(34, 197, 94, 0.12);
+            color: #4ade80;
+            border-color: rgba(34, 197, 94, 0.3)
+        }
+
+        .status-pending {
+            background: rgba(251, 191, 36, 0.12);
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.3)
+        }
+
+        .status-on_leave {
+            background: rgba(96, 165, 250, 0.12);
+            color: #60a5fa;
+            border-color: rgba(96, 165, 250, 0.3)
+        }
+
+        .status-suspended {
+            background: rgba(249, 115, 22, 0.12);
+            color: #f97316;
+            border-color: rgba(249, 115, 22, 0.3)
+        }
+
+        .status-terminated {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.3)
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            z-index: 30;
+            min-width: 11rem;
+            background: rgba(10, 20, 30, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: .5rem;
+            padding: .25rem 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            display: none
+        }
+
+        .dropdown-menu.show {
+            display: block
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            width: 100%;
+            padding: .5rem .75rem;
+            font-size: .75rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: all .15s
+        }
+
+        .dropdown-item:hover {
+            background: rgba(212, 175, 55, 0.1);
+            color: #d4af37
+        }
+
+        .dropdown-item.danger {
+            color: #f87171
+        }
+
+        .dropdown-item.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444
+        }
+
+        .multi-select {
+            position: relative
+        }
+
+        .multi-select .ms-display {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            flex-wrap: wrap;
+            min-height: 2.25rem;
+            padding: .3rem .5rem;
+            background: #020408;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: .375rem;
+            cursor: pointer;
+            font-size: .75rem;
+            color: #9ca3af;
+            transition: border-color .2s
+        }
+
+        .multi-select .ms-display:hover,
+        .multi-select .ms-display:focus-within {
+            border-color: rgba(212, 175, 55, 0.4)
+        }
+
+        .ms-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: rgba(10, 20, 30, 0.97);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: .375rem;
+            max-height: 12rem;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .6)
+        }
+
+        .ms-dropdown.open {
+            display: block
+        }
+
+        .ms-option {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .45rem .65rem;
+            font-size: .75rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: background .15s
+        }
+
+        .ms-option:hover {
+            background: rgba(212, 175, 55, 0.08)
+        }
+
+        .ms-option input {
+            accent-color: #d4af37
+        }
+
+        .ms-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .2rem;
+            background: rgba(212, 175, 55, 0.12);
+            color: #d4af37;
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-radius: 9999px;
+            padding: .1rem .45rem;
+            font-size: .6rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            text-transform: uppercase
+        }
+    </style>
+</head>
+
+<body class="font-inter p-6 space-y-6 h-screen overflow-y-auto pb-24 relative">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="font-cinzel text-xl text-gold flex items-center tracking-wider">
+                <i data-lucide="users" class="w-6 h-6 mr-3"></i> Staff Management
+            </h3>
+            <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Crew Provisioning & Records</p>
+        </div>
+        <button onclick="openEditModal(null)"
+            class="flex items-center space-x-2 bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space font-bold py-2.5 px-5 rounded-lg shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all whitespace-nowrap">
+            <i data-lucide="user-plus" class="w-4 h-4"></i><span>+ Provision New Crew Member</span>
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="glass-panel rounded-lg p-4 flex flex-col md:flex-row items-start md:items-center gap-4 relative z-20">
+        <div class="flex-1 relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="text" id="search-input" placeholder="Search by Name or Employee ID..."
+                class="form-input pl-10 pr-4" oninput="debouncedSearch()">
+        </div>
+        <div class="multi-select w-56" id="ms-role">
+            <div class="ms-display" onclick="toggleMSDropdown('ms-role')"><span class="text-gray-500">Filter by
+                    Role...</span></div>
+            <div class="ms-dropdown" id="ms-role-dropdown"></div>
+        </div>
+        <div class="multi-select w-52" id="ms-status">
+            <div class="ms-display" onclick="toggleMSDropdown('ms-status')"><span class="text-gray-500">Filter by
+                    Status...</span></div>
+            <div class="ms-dropdown" id="ms-status-dropdown"></div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="glass-panel rounded-lg flex flex-col overflow-hidden min-h-[520px]">
+        <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead
+                    class="text-[10px] text-gray-500 uppercase tracking-wider bg-[#010204] sticky top-0 z-10 border-b border-white/10">
+                    <tr>
+                        <th class="px-5 py-3.5 font-semibold">Employee ID</th>
+                        <th class="px-5 py-3.5 font-semibold">Legal Name</th>
+                        <th class="px-5 py-3.5 font-semibold">Role & Department</th>
+                        <th class="px-5 py-3.5 font-semibold">Employment Term</th>
+                        <th class="px-5 py-3.5 font-semibold">Status</th>
+                        <th class="px-5 py-3.5 font-semibold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="staff-tbody" class="divide-y divide-white/5"></tbody>
+            </table>
+        </div>
+        <!-- Pagination -->
+        <div class="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-[#010204]">
+            <span id="pagination-info" class="text-xs text-gray-500 font-mono"></span>
+            <div class="flex items-center gap-1" id="pagination-controls"></div>
+        </div>
+    </div>
+
+    <!-- EDIT / COMPLETE PROFILE MODAL -->
+    <div id="edit-modal" class="modal-overlay hidden">
+        <div
+            class="glass-panel rounded-lg w-full max-w-2xl border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] my-auto flex flex-col max-h-[90vh]">
+            <div
+                class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg flex-shrink-0">
+                <h3 class="font-cinzel text-lg text-gold flex items-center tracking-wider" id="edit-modal-title">
+                    <i data-lucide="user-cog" class="w-5 h-5 mr-2"></i> Edit Profile
+                </h3>
+                <button onclick="closeModal('edit-modal')" class="text-gray-400 hover:text-white transition-colors"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-5 overflow-y-auto flex-1">
+                <input type="hidden" id="edit-emp-id" value="">
+                <!-- Section A -->
+                <div>
+                    <div class="section-header">Identity</div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="form-label">Legal Name</label><input type="text" id="edit-name"
+                                class="form-input" placeholder="Full Legal Name" required></div>
+                        <div><label class="form-label">Primary Email</label><input type="email" id="edit-email"
+                                class="form-input" placeholder="email@agartha.com"></div>
+                        <div><label class="form-label">Phone Number</label><input type="tel" id="edit-phone"
+                                class="form-input" placeholder="+60 12-345 6789"></div>
+                        <div><label class="form-label">Home Address</label><input type="text" id="edit-address"
+                                class="form-input" placeholder="Street, City, Postal"></div>
+                    </div>
+                </div>
+                <!-- Section B -->
+                <div>
+                    <div class="section-header">Emergency Contact</div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label class="form-label">Next of Kin Name</label><input type="text" id="edit-kin-name"
+                                class="form-input" placeholder="Full Name"></div>
+                        <div><label class="form-label">Relationship</label><input type="text" id="edit-kin-rel"
+                                class="form-input" placeholder="e.g. Spouse"></div>
+                        <div><label class="form-label">Phone</label><input type="tel" id="edit-kin-phone"
+                                class="form-input" placeholder="+60 12-345 6789"></div>
+                    </div>
+                </div>
+                <!-- Section C -->
+                <div>
+                    <div class="section-header flex items-center justify-between">
+                        <span>PII & Financial</span>
+                        <div class="group relative flex items-center text-gold cursor-help">
+                            <i data-lucide="lock" class="w-3.5 h-3.5 mr-1"></i>
+                            <span class="text-[9px] font-bold tracking-widest uppercase">E2E Encrypted</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="form-label">National ID / Passport</label><input type="text"
+                                id="edit-national-id" class="form-input font-mono" placeholder="****-****-1234"></div>
+                        <div><label class="form-label">Bank Name</label><input type="text" id="edit-bank"
+                                class="form-input" placeholder="Bank Name"></div>
+                        <div>
+                            <label class="form-label">Account Number</label>
+                            <div class="relative">
+                                <input type="password" id="edit-account" class="form-input font-mono pr-10"
+                                    placeholder="••••••••••••">
+                                <button type="button" onclick="toggleVisibility('edit-account', this)"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gold transition-colors">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Monthly Base Salary (MYR)</label>
+                            <div class="relative">
+                                <span
+                                    class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-xs">RM</span>
+                                <input type="password" id="edit-salary" class="form-input font-mono pl-9 pr-10"
+                                    placeholder="••••••">
+                                <button type="button" onclick="toggleVisibility('edit-salary', this)"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gold transition-colors">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Section D -->
+                <div>
+                    <div class="section-header">Contract</div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label class="form-label">Start Date</label><input type="date" id="edit-start-date"
+                                class="form-input"></div>
+                        <div><label class="form-label">End Date <span
+                                    class="text-gray-600 normal-case">(optional)</span></label><input type="date"
+                                id="edit-end-date" class="form-input"></div>
+                        <div><label class="form-label">Assigned Role</label>
+                            <select id="edit-role" class="form-input cursor-pointer text-white">
+                                <optgroup label="ADMIN">
+                                    <option value="it_admin">IT Admin</option>
+                                    <option value="business_admin">Business Admin</option>
+                                </optgroup>
+                                <optgroup label="MANAGEMENT">
+                                    <option value="fnb_manager">F&B Manager</option>
+                                    <option value="merch_manager">Merch Manager</option>
+                                    <option value="maintenance_manager">Maintenance Manager</option>
+                                    <option value="inventory_manager">Inventory Manager</option>
+                                    <option value="marketing_manager">Marketing Manager</option>
+                                    <option value="human_resources_manager">HR Manager</option>
+                                    <option value="compliance_manager">Compliance Manager</option>
+                                    <option value="operations_manager">Operations Manager</option>
+                                </optgroup>
+                                <optgroup label="CREW">
+                                    <option value="fnb_crew">F&B Crew</option>
+                                    <option value="service_crew">Service Crew</option>
+                                    <option value="giftshop_crew">Giftshop Crew</option>
+                                    <option value="runner_crew">Runner Crew</option>
+                                    <option value="security_crew">Security Crew</option>
+                                    <option value="health_crew">Health Crew</option>
+                                    <option value="cleaning_crew">Cleaning Crew</option>
+                                    <option value="experience_crew">Experience Crew</option>
+                                    <option value="internal_maintainence_crew">Internal Maintenance Crew</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <!-- Buttons -->
+                <div class="flex justify-end pt-3 border-t border-white/10">
+                    <button type="button" id="btn-save" onclick="saveEmployee()"
+                        class="px-6 py-2.5 text-sm font-bold rounded bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space shadow-[0_0_15px_rgba(212,175,55,0.3)] transition-all flex items-center justify-center min-w-[160px]">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRANSFER MODAL -->
+    <div id="transfer-modal" class="modal-overlay hidden">
+        <div
+            class="glass-panel rounded-lg w-full max-w-lg border-gold/30 shadow-[0_10px_40px_rgba(212,175,55,0.15)] my-auto">
+            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-space/50 rounded-t-lg">
+                <h3 class="font-cinzel text-lg text-gold flex items-center tracking-wider"><i
+                        data-lucide="arrow-right-left" class="w-5 h-5 mr-2"></i> Request Role Transfer</h3>
+                <button onclick="closeModal('transfer-modal')"
+                    class="text-gray-400 hover:text-white transition-colors"><i data-lucide="x"
+                        class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-5">
+                <input type="hidden" id="transfer-emp-id" value="">
+                <div
+                    class="flex items-center gap-2 mb-3 text-[10px] text-amber-400 bg-amber-400/5 border border-amber-400/20 rounded px-3 py-2">
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5 flex-shrink-0"></i>
+                    <span>Requires IT Clearance. This request will be routed to the IAM Ledger.</span>
+                </div>
+                <div><label class="form-label">Current Role</label><input type="text" id="transfer-current-role"
+                        class="form-input" readonly></div>
+                <div><label class="form-label">Target Role</label>
+                    <select id="transfer-target-role" class="form-input cursor-pointer text-white">
+                        <optgroup label="ADMIN">
+                            <option value="it_admin">IT Admin</option>
+                            <option value="business_admin">Business Admin</option>
+                        </optgroup>
+                        <optgroup label="MANAGEMENT">
+                            <option value="fnb_manager">F&B Manager</option>
+                            <option value="merch_manager">Merch Manager</option>
+                            <option value="maintenance_manager">Maintenance Manager</option>
+                            <option value="inventory_manager">Inventory Manager</option>
+                            <option value="marketing_manager">Marketing Manager</option>
+                            <option value="human_resources_manager">HR Manager</option>
+                            <option value="compliance_manager">Compliance Manager</option>
+                            <option value="operations_manager">Operations Manager</option>
+                        </optgroup>
+                        <optgroup label="CREW">
+                            <option value="fnb_crew">F&B Crew</option>
+                            <option value="service_crew">Service Crew</option>
+                            <option value="giftshop_crew">Giftshop Crew</option>
+                            <option value="runner_crew">Runner Crew</option>
+                            <option value="security_crew">Security Crew</option>
+                            <option value="health_crew">Health Crew</option>
+                            <option value="cleaning_crew">Cleaning Crew</option>
+                            <option value="experience_crew">Experience Crew</option>
+                            <option value="internal_maintainence_crew">Internal Maintenance Crew</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div><label class="form-label">Business Justification</label><textarea id="transfer-justification"
+                        class="form-input" rows="3"
+                        placeholder="Provide reason for this transfer request..."></textarea></div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-white/10">
+                    <button onclick="closeModal('transfer-modal')"
+                        class="px-5 py-2.5 text-sm font-medium rounded text-gray-400 hover:text-white transition-colors">Cancel</button>
+                    <button id="btn-submit-transfer" onclick="submitTransfer()"
+                        class="px-6 py-2.5 text-sm font-bold rounded bg-gradient-to-r from-bronze to-gold hover:from-gold hover:to-yellow-300 text-space shadow-[0_0_15px_rgba(212,175,55,0.3)] transition-all flex items-center justify-center min-w-[210px]">
+                        <span>Submit Transfer Request</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TERMINATION MODAL -->
+    <div id="term-modal" class="modal-overlay hidden">
+        <div
+            class="glass-panel rounded-lg w-full max-w-lg border-red-500/30 shadow-[0_10px_40px_rgba(239,68,68,0.15)] my-auto">
+            <div class="p-5 border-b border-red-500/20 flex justify-between items-center bg-red-950/30 rounded-t-lg">
+                <h3 class="font-cinzel text-lg text-red-400 flex items-center tracking-wider"><i
+                        data-lucide="alert-octagon" class="w-5 h-5 mr-2"></i> Execute Offboarding</h3>
+                <button onclick="closeModal('term-modal')" class="text-gray-400 hover:text-white transition-colors"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 space-y-5">
+                <input type="hidden" id="term-emp-id" value="">
+                <div class="bg-red-500/5 border border-red-500/20 rounded-lg p-4 text-sm text-red-300 leading-relaxed">
+                    <span class="font-bold text-red-400">⚠ CRITICAL ACTION:</span> You are about to instantly terminate
+                    <strong id="term-emp-name" class="text-white">—</strong> and revoke all digital and physical access.
+                    This action triggers an immediate authentication kill-switch destroying all active JWTs, session
+                    cookies, and physical gate clearances.
+                </div>
+                <div><label class="form-label">Termination Reason</label>
+                    <select id="term-reason"
+                        class="form-input cursor-pointer border-red-500/20 focus:border-red-500/50">
+                        <option value="">— Select Reason —</option>
+                        <option value="resignation">Resignation</option>
+                        <option value="contract_expired">Contract Expired</option>
+                        <option value="misconduct">Misconduct</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Type Employee ID to Confirm</label>
+                    <input type="text" id="term-confirm-id"
+                        class="form-input font-mono border-red-500/20 focus:border-red-500/50"
+                        placeholder="Type EMP-XXXX... to unlock" oninput="checkTermConfirm()">
+                    <p class="text-[10px] text-gray-600 mt-1">Must match: <span id="term-expected-id"
+                            class="font-mono text-red-400/80"></span></p>
+                </div>
+                <div class="flex justify-end gap-3 pt-3 border-t border-red-500/10">
+                    <button onclick="closeModal('term-modal')"
+                        class="px-5 py-2.5 text-sm font-medium rounded text-gray-400 hover:text-white transition-colors">Cancel</button>
+                    <button id="btn-exec-term" onclick="executeTermination()" disabled
+                        class="px-6 py-2.5 text-sm font-bold rounded bg-red-600/40 text-red-300 cursor-not-allowed transition-all flex items-center justify-center min-w-[200px]">
+                        <span>EXECUTE TERMINATION</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"
+        class="fixed bottom-8 right-8 bg-space border-l-4 border-l-gold border-y border-y-white/10 border-r border-r-white/10 text-white px-6 py-4 rounded-lg shadow-xl backdrop-blur-md text-sm font-semibold flex items-center space-x-3 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none z-[60]">
+        <i data-lucide="info" class="w-5 h-5 text-gold"></i><span id="toast-msg"></span>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ── ENUMS ──
+        const ROLES = {
+            it_admin: 'IT Admin', business_admin: 'Business Admin',
+            fnb_manager: 'F&B Manager', merch_manager: 'Merch Manager', maintenance_manager: 'Maintenance Manager', inventory_manager: 'Inventory Manager', marketing_manager: 'Marketing Manager', human_resources_manager: 'HR Manager', compliance_manager: 'Compliance Manager', operations_manager: 'Operations Manager',
+            fnb_crew: 'F&B Crew', service_crew: 'Service Crew', giftshop_crew: 'Giftshop Crew', runner_crew: 'Runner Crew', security_crew: 'Security Crew', health_crew: 'Health Crew', cleaning_crew: 'Cleaning Crew', experience_crew: 'Experience Crew', internal_maintainence_crew: 'Internal Maintenance Crew'
+        };
+        const STATUSES = { active: 'ACTIVE', pending: 'PENDING', on_leave: 'ON LEAVE', suspended: 'SUSPENDED', terminated: 'TERMINATED' };
+
+        // Use a functional pattern to generate role colors since we have many roles:
+        const ROLE_COLORS = {};
+        Object.keys(ROLES).forEach(k => {
+            if (k.endsWith('_admin')) ROLE_COLORS[k] = 'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30';
+            else if (k.endsWith('_manager')) ROLE_COLORS[k] = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+            else ROLE_COLORS[k] = 'bg-sky-500/15 text-sky-400 border-sky-500/30';
+        });
+
+        // ── MOCK DATA ──
+        const employees = [
+            { id: 'EMP-8F2A3B91', name: 'Ahmad Razif bin Harun', email: 'ahmad.r@agartha.com', phone: '+60 12-345 6789', address: '12 Jln Bukit, KL', kinName: 'Siti Aminah', kinRel: 'Wife', kinPhone: '+60 13-456 7890', nationalId: 'xxxx-xxxx-xxxx-3847', bank: 'Maybank', account: '112233445566', salary: '3500.00', role: 'fnb_crew', startDate: '2024-03-15', endDate: null, status: 'active' },
+            { id: 'EMP-1D4E6F78', name: 'Chen Wei Lin', email: 'wei.lin@agartha.com', phone: '+60 11-987 6543', address: '88 Damansara Heights', kinName: 'Chen Mei Ling', kinRel: 'Mother', kinPhone: '+60 11-111 2222', nationalId: 'xxxx-xxxx-xxxx-5512', bank: 'CIMB', account: '987654321012', salary: '4200.00', role: 'security_crew', startDate: '2023-11-01', endDate: '2025-10-31', status: 'active' },
+            { id: 'EMP-9A2B3C4D', name: 'Nur Aisyah binti Osman', email: 'aisyah.o@agartha.com', phone: '+60 19-876 5432', address: '45 Setapak, KL', kinName: 'Osman bin Ali', kinRel: 'Father', kinPhone: '+60 13-999 8888', nationalId: 'xxxx-xxxx-xxxx-7721', bank: 'RHB', account: '887766554433', salary: '3200.00', role: 'giftshop_crew', startDate: '2024-06-01', endDate: null, status: 'active' },
+            { id: 'EMP-5E6F7A8B', name: 'Rajesh Krishnan', email: 'rajesh.k@agartha.com', phone: '+60 17-654 3210', address: '101 Bangsar South', kinName: 'Priya Devi', kinRel: 'Wife', kinPhone: '+60 17-222 3333', nationalId: 'xxxx-xxxx-xxxx-1198', bank: 'Public Bank', account: '102030405060', salary: '4800.00', role: 'health_crew', startDate: '2023-05-20', endDate: null, status: 'active' },
+            { id: 'EMP-2C3D4E5F', name: 'Sarah Johnson', email: 'sarah.j@agartha.com', phone: '+60 10-123 4567', address: '7 Mont Kiara', kinName: 'David Johnson', kinRel: 'Brother', kinPhone: '+60 14-555 6666', nationalId: 'xxxx-xxxx-xxxx-4409', bank: 'HSBC', account: '665544332211', salary: '4500.00', role: 'experience_crew', startDate: '2024-01-10', endDate: '2024-12-31', status: 'terminated' },
+            { id: 'EMP-7G8H9I0J', name: 'Muhammad Irfan bin Yusof', email: 'irfan.y@agartha.com', phone: '+60 16-789 0123', address: '22 Subang Jaya', kinName: 'Yusof bin Hassan', kinRel: 'Father', kinPhone: '+60 12-777 8888', nationalId: 'xxxx-xxxx-xxxx-6633', bank: 'AmBank', account: '119922883377', salary: '3600.00', role: 'internal_maintainence_crew', startDate: '2024-08-15', endDate: null, status: 'active' },
+            { id: 'EMP-3K4L5M6N', name: 'Tan Siew Ling', email: 'siew.ling@agartha.com', phone: '+60 18-321 6540', address: '55 Petaling Jaya', kinName: 'Tan Ah Kow', kinRel: 'Husband', kinPhone: '+60 12-444 5555', nationalId: 'xxxx-xxxx-xxxx-2287', bank: 'Hong Leong', account: '776655443322', salary: '3800.00', role: 'fnb_manager', startDate: '2023-09-01', endDate: null, status: 'pending' },
+            { id: 'EMP-8O9P0Q1R', name: 'Amirul Hakim bin Mazlan', email: 'amirul.m@agartha.com', phone: '+60 15-654 7890', address: '33 Cheras', kinName: 'Mazlan bin Ibrahim', kinRel: 'Father', kinPhone: '+60 13-666 7777', nationalId: 'xxxx-xxxx-xxxx-9901', bank: 'Bank Islam', account: '223344556677', salary: '4100.00', role: 'security_crew', startDate: '2024-04-01', endDate: '2026-03-31', status: 'active' },
+            { id: 'EMP-2S3T4U5V', name: 'Kavitha Murugan', email: 'kavitha.m@agartha.com', phone: '+60 14-987 1234', address: '9 Ampang', kinName: 'Murugan Pillai', kinRel: 'Father', kinPhone: '+60 12-888 9999', nationalId: 'xxxx-xxxx-xxxx-5578', bank: 'Standard Chartered', account: '554433221100', salary: '3400.00', role: 'runner_crew', startDate: '2024-02-14', endDate: null, status: 'suspended' },
+            { id: 'EMP-6W7X8Y9Z', name: 'Lee Jia Hao', email: 'jia.hao@agartha.com', phone: '+60 11-456 7890', address: '77 Sri Hartamas', kinName: 'Lee Mei Fong', kinRel: 'Mother', kinPhone: '+60 11-333 4444', nationalId: 'xxxx-xxxx-xxxx-3345', bank: 'UOB', account: '998877665544', salary: '4900.00', role: 'it_admin', startDate: '2023-12-01', endDate: null, status: 'active' },
+            { id: 'EMP-0A1B2C3D', name: 'Fatimah binti Abdullah', email: 'fatimah.a@agartha.com', phone: '+60 19-111 2233', address: '14 Bukit Jalil', kinName: 'Abdullah bin Ismail', kinRel: 'Father', kinPhone: '+60 18-123 4567', nationalId: 'xxxx-xxxx-xxxx-7789', bank: 'Maybank', account: '445566778899', salary: '4300.00', role: 'cleaning_crew', startDate: '2024-07-01', endDate: null, status: 'active' },
+            { id: 'EMP-4E5F6G7H', name: 'Vikram Singh', email: 'vikram.s@agartha.com', phone: '+60 17-999 8877', address: '28 Desa ParkCity', kinName: 'Gurpreet Kaur', kinRel: 'Wife', kinPhone: '+60 17-111 0000', nationalId: 'xxxx-xxxx-xxxx-1123', bank: 'OCBC', account: '102938475665', salary: '3700.00', role: 'operations_manager', startDate: '2024-09-15', endDate: '2025-09-14', status: 'pending' },
+        ];
+
+        // ── STATE ──
+        let currentPage = 1;
+        const PAGE_SIZE = 10;
+        let searchQuery = '';
+        let filterRoles = [];
+        let filterStatuses = [];
+        let debounceTimer = null;
+
+        // ── SEARCH DEBOUNCE + VALIDATION ──
+        const SQLI_RE = /['";\-\-\/\*\\]/;
+        function debouncedSearch() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const raw = document.getElementById('search-input').value.trim();
+                if (SQLI_RE.test(raw)) { showToast('Invalid characters detected in search.'); return; }
+                searchQuery = raw.toLowerCase();
+                currentPage = 1;
+                renderTable();
+            }, 300);
+        }
+
+        // ── MULTI-SELECT COMPONENTS ──
+        function buildMultiSelect(containerId, options, onChangeArr) {
+            const dd = document.getElementById(containerId + '-dropdown');
+            if (!dd) return;
+            dd.innerHTML = '';
+
+            // Build groups for roles if applicable
+            if (containerId === 'ms-role') {
+                const groups = {
+                    'ADMIN': ['it_admin', 'business_admin'],
+                    'MANAGEMENT': ['fnb_manager', 'merch_manager', 'maintenance_manager', 'inventory_manager', 'marketing_manager', 'human_resources_manager', 'compliance_manager', 'operations_manager'],
+                    'CREW': ['fnb_crew', 'service_crew', 'giftshop_crew', 'runner_crew', 'security_crew', 'health_crew', 'cleaning_crew', 'experience_crew', 'internal_maintainence_crew']
+                };
+
+                for (const [groupLabel, keys] of Object.entries(groups)) {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'px-2 py-1 text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider bg-space/50';
+                    groupDiv.innerText = groupLabel;
+                    dd.appendChild(groupDiv);
+
+                    keys.forEach(k => {
+                        if (options[k]) {
+                            const opt = document.createElement('label');
+                            opt.className = 'ms-option pl-4';
+                            opt.innerHTML = `<input type="checkbox" value="${k}" class="accent-gold"> ${options[k]}`;
+                            opt.querySelector('input').addEventListener('change', () => {
+                                const checked = [...dd.querySelectorAll('input:checked')].map(i => i.value);
+                                filterRoles = checked;
+                                updateMSDisplay(containerId, options);
+                                currentPage = 1;
+                                renderTable();
+                            });
+                            dd.appendChild(opt);
+                        }
+                    });
+                }
+            } else {
+                Object.entries(options).forEach(([k, v]) => {
+                    const opt = document.createElement('label');
+                    opt.className = 'ms-option';
+                    opt.innerHTML = `<input type="checkbox" value="${k}" class="accent-gold"> ${v}`;
+                    opt.querySelector('input').addEventListener('change', () => {
+                        const checked = [...dd.querySelectorAll('input:checked')].map(i => i.value);
+                        if (containerId === 'ms-role') filterRoles = checked;
+                        else filterStatuses = checked;
+                        updateMSDisplay(containerId, options);
+                        currentPage = 1;
+                        renderTable();
+                    });
+                    dd.appendChild(opt);
+                });
+            }
+        }
+        function updateMSDisplay(containerId, options) {
+            const dd = document.getElementById(containerId + '-dropdown');
+            const display = document.getElementById(containerId).querySelector('.ms-display');
+            const checked = [...dd.querySelectorAll('input:checked')].map(i => i.value);
+            if (checked.length === 0) { display.innerHTML = `<span class="text-gray-500">${containerId === 'ms-role' ? 'Filter by Role...' : 'Filter by Status...'}</span>`; return; }
+            display.innerHTML = checked.map(v => `<span class="ms-pill">${options[v]}</span>`).join('');
+        }
+        function toggleMSDropdown(containerId) {
+            const dd = document.getElementById(containerId + '-dropdown');
+            const isOpen = dd.classList.contains('open');
+            document.querySelectorAll('.ms-dropdown').forEach(d => d.classList.remove('open'));
+            if (!isOpen) dd.classList.add('open');
+        }
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.multi-select')) document.querySelectorAll('.ms-dropdown').forEach(d => d.classList.remove('open'));
+        });
+
+        // ── FILTERING + PAGINATION ──
+        function getFilteredEmployees() {
+            return employees.filter(emp => {
+                if (searchQuery && !emp.name.toLowerCase().includes(searchQuery) && !emp.id.toLowerCase().includes(searchQuery)) return false;
+                if (filterRoles.length && !filterRoles.includes(emp.role)) return false;
+                if (filterStatuses.length && !filterStatuses.includes(emp.status)) return false;
+                return true;
+            });
+        }
+
+        function renderTable() {
+            const filtered = getFilteredEmployees();
+            const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+            if (currentPage > totalPages) currentPage = totalPages;
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const page = filtered.slice(start, start + PAGE_SIZE);
+            const tbody = document.getElementById('staff-tbody');
+            tbody.innerHTML = '';
+
+            if (page.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-16 text-gray-600 text-sm">No employees match your filters.</td></tr>`;
+            }
+
+            page.forEach(emp => {
+                const shortId = emp.id.substring(0, 8) + '…';
+                const endDisplay = emp.endDate ? `${emp.startDate} → ${emp.endDate}` : '<span class="text-white">Permanent</span>';
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-white/[0.02] transition-colors border-l-2 border-transparent hover:border-l-gold group';
+                tr.innerHTML = `
+            <td class="px-5 py-3.5">
+                <div class="flex items-center gap-2">
+                    <span class="font-mono text-xs text-gray-300">${shortId}</span>
+                    <button onclick="copyId('${emp.id}')" class="text-gray-600 hover:text-gold transition-colors opacity-0 group-hover:opacity-100" title="Copy full ID"><i data-lucide="copy" class="w-3 h-3"></i></button>
+                </div>
+            </td>
+            <td class="px-5 py-3.5 text-sm text-white font-medium">${emp.name}</td>
+            <td class="px-5 py-3.5"><span class="badge ${ROLE_COLORS[emp.role] || ''}">${ROLES[emp.role]}</span></td>
+            <td class="px-5 py-3.5 text-xs text-gray-400 font-mono">${endDisplay}</td>
+            <td class="px-5 py-3.5"><span class="badge status-${emp.status}">${STATUSES[emp.status]}</span></td>
+            <td class="px-5 py-3.5 text-right">
+                <div class="relative inline-block">
+                    <button type="button" onclick="toggleRowMenu(event)" class="text-gray-500 hover:text-gold transition-colors p-1.5 rounded hover:bg-gold/10 row-menu-btn"><i data-lucide="more-horizontal" class="w-4 h-4 pointer-events-none"></i></button>
+                    <div class="dropdown-menu">
+                        <button class="dropdown-item" onclick="openEditModal('${emp.id}')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit Profile</button>
+                        <button class="dropdown-item" onclick="openTransferModal('${emp.id}')"><i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i> Transfer Role</button>
+                        <div class="my-1 border-t border-white/5"></div>
+                        <button class="dropdown-item danger" onclick="openTermModal('${emp.id}')"><i data-lucide="user-x" class="w-3.5 h-3.5"></i> Terminate Employee</button>
+                    </div>
+                </div>
+            </td>`;
+                tbody.appendChild(tr);
+            });
+
+            // Pagination info
+            document.getElementById('pagination-info').textContent = filtered.length ? `Showing ${start + 1}–${Math.min(start + PAGE_SIZE, filtered.length)} of ${filtered.length} records` : '0 records';
+
+            // Pagination buttons
+            const controls = document.getElementById('pagination-controls');
+            controls.innerHTML = '';
+            const addBtn = (label, pg, disabled, active) => {
+                const b = document.createElement('button');
+                b.innerHTML = label;
+                b.disabled = disabled;
+                b.className = `px-3 py-1.5 text-xs rounded transition-all ${active ? 'bg-gold/20 text-gold border border-gold/40 font-bold' : disabled ? 'text-gray-700 cursor-not-allowed' : 'text-gray-400 hover:text-gold hover:bg-gold/10 border border-transparent'}`;
+                if (!disabled) b.onclick = () => { currentPage = pg; renderTable(); };
+                controls.appendChild(b);
+            };
+            addBtn('<i data-lucide="chevron-left" class="w-3 h-3"></i>', currentPage - 1, currentPage === 1, false);
+            for (let i = 1; i <= totalPages; i++) addBtn(i, i, false, i === currentPage);
+            addBtn('<i data-lucide="chevron-right" class="w-3 h-3"></i>', currentPage + 1, currentPage === totalPages, false);
+
+            lucide.createIcons();
+        }
+
+        // ── ROW MENU ──
+        function toggleRowMenu(event) {
+            event.stopPropagation();
+            const btn = event.currentTarget || event.target.closest('.row-menu-btn');
+            if (!btn) return;
+            const menu = btn.nextElementSibling;
+            document.querySelectorAll('.dropdown-menu.show').forEach(m => { if (m !== menu) m.classList.remove('show'); });
+            menu.classList.toggle('show');
+            lucide.createIcons();
+        }
+        document.addEventListener('click', e => { if (!e.target.closest('.dropdown-menu') && !e.target.closest('.row-menu-btn')) document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show')); });
+
+        // ── COPY ID ──
+        function copyId(id) { navigator.clipboard.writeText(id).then(() => showToast('Copied: ' + id)); }
+
+        // ── MODAL HELPERS ──
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // ── EDIT / PROVISION MODAL ──
+        function openEditModal(empId) {
+            document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+            const modal = document.getElementById('edit-modal');
+            if (!empId) {
+                document.getElementById('edit-modal-title').innerHTML = '<i data-lucide="user-plus" class="w-5 h-5 mr-2"></i> Provision New Crew Member';
+                document.getElementById('edit-emp-id').value = '';
+                ['edit-name', 'edit-email', 'edit-phone', 'edit-address', 'edit-kin-name', 'edit-kin-rel', 'edit-kin-phone', 'edit-national-id', 'edit-bank', 'edit-account', 'edit-salary'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('edit-start-date').value = '';
+                document.getElementById('edit-end-date').value = '';
+                document.getElementById('edit-role').value = 'fnb_crew';
+            } else {
+                const emp = employees.find(e => e.id === empId);
+                if (!emp) return;
+                document.getElementById('edit-modal-title').innerHTML = '<i data-lucide="user-cog" class="w-5 h-5 mr-2"></i> Edit Profile — ' + emp.name;
+                document.getElementById('edit-emp-id').value = emp.id;
+                document.getElementById('edit-name').value = emp.name;
+                document.getElementById('edit-email').value = emp.email;
+                document.getElementById('edit-phone').value = emp.phone;
+                document.getElementById('edit-address').value = emp.address;
+                document.getElementById('edit-kin-name').value = emp.kinName;
+                document.getElementById('edit-kin-rel').value = emp.kinRel;
+                document.getElementById('edit-kin-phone').value = emp.kinPhone;
+                document.getElementById('edit-national-id').value = emp.nationalId;
+                document.getElementById('edit-bank').value = emp.bank;
+                document.getElementById('edit-account').value = emp.account;
+                document.getElementById('edit-salary').value = emp.salary;
+                document.getElementById('edit-role').value = emp.role;
+                document.getElementById('edit-start-date').value = emp.startDate;
+                document.getElementById('edit-end-date').value = emp.endDate || '';
+            }
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function saveEmployee() {
+            const name = document.getElementById('edit-name').value.trim();
+            const email = document.getElementById('edit-email').value.trim();
+            if (!name) { showToast('Name is required.'); return; }
+
+            const btn = document.getElementById('btn-save');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i><span>Saving...</span>`;
+            lucide.createIcons();
+
+            setTimeout(() => {
+                const empId = document.getElementById('edit-emp-id').value;
+                if (empId) {
+                    const emp = employees.find(e => e.id === empId);
+                    if (emp) {
+                        emp.name = name;
+                        emp.email = email || emp.email;
+                        emp.phone = document.getElementById('edit-phone').value || emp.phone;
+                        emp.address = document.getElementById('edit-address').value || emp.address;
+                        emp.kinName = document.getElementById('edit-kin-name').value || emp.kinName;
+                        emp.kinRel = document.getElementById('edit-kin-rel').value || emp.kinRel;
+                        emp.kinPhone = document.getElementById('edit-kin-phone').value || emp.kinPhone;
+                        emp.nationalId = document.getElementById('edit-national-id').value || emp.nationalId;
+                        emp.bank = document.getElementById('edit-bank').value || emp.bank;
+                        emp.account = document.getElementById('edit-account').value || emp.account;
+                        emp.salary = document.getElementById('edit-salary').value || emp.salary;
+                        emp.role = document.getElementById('edit-role').value;
+                        emp.startDate = document.getElementById('edit-start-date').value || emp.startDate;
+                        emp.endDate = document.getElementById('edit-end-date').value || null;
+                    }
+                    showToast('Profile for ' + name + ' saved successfully.');
+                } else {
+                    const newId = 'EMP-' + crypto.randomUUID().substring(0, 8).toUpperCase();
+                    employees.push({
+                        id: newId,
+                        name,
+                        email,
+                        phone: document.getElementById('edit-phone').value,
+                        address: document.getElementById('edit-address').value,
+                        kinName: document.getElementById('edit-kin-name').value,
+                        kinRel: document.getElementById('edit-kin-rel').value,
+                        kinPhone: document.getElementById('edit-kin-phone').value,
+                        nationalId: document.getElementById('edit-national-id').value,
+                        bank: document.getElementById('edit-bank').value,
+                        account: document.getElementById('edit-account').value,
+                        salary: document.getElementById('edit-salary').value,
+                        role: document.getElementById('edit-role').value,
+                        startDate: document.getElementById('edit-start-date').value,
+                        endDate: document.getElementById('edit-end-date').value || null,
+                        status: 'active'
+                    });
+                    showToast('New crew member ' + name + ' provisioned.');
+                }
+                btn.innerHTML = originalHTML;
+                closeModal('edit-modal');
+                renderTable();
+            }, 800);
+        }
+
+        // ── TRANSFER MODAL ──
+        function openTransferModal(empId) {
+            document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+            const emp = employees.find(e => e.id === empId);
+            if (!emp) return;
+            document.getElementById('transfer-emp-id').value = emp.id;
+            document.getElementById('transfer-current-role').value = ROLES[emp.role];
+            document.getElementById('transfer-target-role').value = emp.role;
+            document.getElementById('transfer-justification').value = '';
+            document.getElementById('transfer-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function submitTransfer() {
+            const empId = document.getElementById('transfer-emp-id').value;
+            const emp = employees.find(e => e.id === empId);
+            if (!emp) return;
+            const justification = document.getElementById('transfer-justification').value.trim();
+            if (!justification) { showToast('Business justification is required.'); return; }
+
+            const btn = document.getElementById('btn-submit-transfer');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i><span>Routing to IAM Ledger...</span>`;
+            lucide.createIcons();
+
+            setTimeout(() => {
+                emp.status = 'transfer_pending';
+                btn.innerHTML = originalHTML;
+                closeModal('transfer-modal');
+                showToast('Transfer request for ' + emp.name + ' submitted to IAM Ledger.');
+                renderTable();
+            }, 1000);
+        }
+
+        // ── TERMINATION MODAL ──
+        function openTermModal(empId) {
+            document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+            const emp = employees.find(e => e.id === empId);
+            if (!emp) return;
+            document.getElementById('term-emp-id').value = emp.id;
+            document.getElementById('term-emp-name').textContent = emp.name;
+            document.getElementById('term-expected-id').textContent = emp.id;
+            document.getElementById('term-reason').value = '';
+            document.getElementById('term-confirm-id').value = '';
+            const btn = document.getElementById('btn-exec-term');
+            btn.disabled = true;
+            btn.className = 'px-6 py-2.5 text-sm font-bold rounded bg-red-600/40 text-red-300 cursor-not-allowed transition-all';
+            document.getElementById('term-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function checkTermConfirm() {
+            const expected = document.getElementById('term-emp-id').value;
+            const typed = document.getElementById('term-confirm-id').value.trim();
+            const reason = document.getElementById('term-reason').value;
+            const btn = document.getElementById('btn-exec-term');
+            if (typed === expected && reason) {
+                btn.disabled = false;
+                btn.className = 'px-6 py-2.5 text-sm font-bold rounded bg-red-600 hover:bg-red-500 text-white cursor-pointer shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all';
+            } else {
+                btn.disabled = true;
+                btn.className = 'px-6 py-2.5 text-sm font-bold rounded bg-red-600/40 text-red-300 cursor-not-allowed transition-all';
+            }
+        }
+        document.getElementById('term-reason')?.addEventListener('change', checkTermConfirm);
+
+        function executeTermination() {
+            const empId = document.getElementById('term-emp-id').value;
+            const emp = employees.find(e => e.id === empId);
+            if (!emp) return;
+
+            const btn = document.getElementById('btn-exec-term');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i><span>EXECUTING KILL-SWITCH...</span>`;
+            lucide.createIcons();
+
+            setTimeout(() => {
+                emp.status = 'terminated';
+                emp.endDate = new Date().toISOString().split('T')[0];
+                btn.innerHTML = originalHTML;
+                closeModal('term-modal');
+                showToast('⚠ ' + emp.name + ' terminated. Auth kill-switch executed.');
+                renderTable();
+            }, 1500);
+        }
+
+        function toggleVisibility(inputId, btnEl) {
+            const input = document.getElementById(inputId);
+            const icon = btnEl.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        // ── TOAST ──
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none'), 3500);
+        }
+
+        // ── INIT ──
+        document.addEventListener('DOMContentLoaded', () => {
+            buildMultiSelect('ms-role', ROLES);
+            buildMultiSelect('ms-status', STATUSES);
+            renderTable();
+        });
+    </script>
+</body>
+
+</html>
