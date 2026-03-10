@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telemetry Dependency Graph | Agartha OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;600&family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;600&family=Orbitron:wght@400;600;800&display=swap"
+        rel="stylesheet">
     <style>
         body {
             background-color: #020408;
@@ -14,62 +17,139 @@
             font-family: 'Inter', sans-serif;
             overflow: hidden;
         }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
-        ::-webkit-scrollbar-thumb { background: #806b45; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #d4af37; }
 
-        .font-voc { font-family: 'Cinzel', serif; }
-        .font-tech { font-family: 'Inter', sans-serif; }
-        .font-display { font-family: 'Orbitron', sans-serif; }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #806b45;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4af37;
+        }
+
+        .font-voc {
+            font-family: 'Cinzel', serif;
+        }
+
+        .font-tech {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-display {
+            font-family: 'Orbitron', sans-serif;
+        }
 
         .tree ul {
-            padding-top: 24px; position: relative;
-            display: flex; justify-content: center; padding-left: 0;
+            padding-top: 24px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            padding-left: 0;
         }
+
         .tree li {
-            float: left; text-align: center; list-style-type: none;
-            position: relative; padding: 24px 12px 0 12px;
+            float: left;
+            text-align: center;
+            list-style-type: none;
+            position: relative;
+            padding: 24px 12px 0 12px;
         }
-        .tree li::before, .tree li::after{
-            content: ''; position: absolute; top: 0; right: 50%;
+
+        .tree li::before,
+        .tree li::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 50%;
             border-top: 2px solid rgba(128, 107, 69, 0.4);
-            width: 50%; height: 24px; z-index: -1;
+            width: 50%;
+            height: 24px;
+            z-index: -1;
         }
-        .tree li::after{
-            right: auto; left: 50%; border-left: 2px solid rgba(128, 107, 69, 0.4);
-        }
-        .tree li:only-child::after, .tree li:only-child::before { display: none; }
-        .tree li:only-child{ padding-top: 0;}
-        .tree li:first-child::before, .tree li:last-child::after{ border: 0 none; }
-        .tree li:last-child::before{
-            border-right: 2px solid rgba(128, 107, 69, 0.4); border-radius: 0 4px 0 0;
-        }
-        .tree li:first-child::after{ border-radius: 4px 0 0 0; }
-        .tree ul ul::before{
-            content: ''; position: absolute; top: 0; left: 50%;
+
+        .tree li::after {
+            right: auto;
+            left: 50%;
             border-left: 2px solid rgba(128, 107, 69, 0.4);
-            width: 0; height: 24px; z-index: -1;
+        }
+
+        .tree li:only-child::after,
+        .tree li:only-child::before {
+            display: none;
+        }
+
+        .tree li:only-child {
+            padding-top: 0;
+        }
+
+        .tree li:first-child::before,
+        .tree li:last-child::after {
+            border: 0 none;
+        }
+
+        .tree li:last-child::before {
+            border-right: 2px solid rgba(128, 107, 69, 0.4);
+            border-radius: 0 4px 0 0;
+        }
+
+        .tree li:first-child::after {
+            border-radius: 4px 0 0 0;
+        }
+
+        .tree ul ul::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            border-left: 2px solid rgba(128, 107, 69, 0.4);
+            width: 0;
+            height: 24px;
+            z-index: -1;
         }
 
         .node-card {
-            background: rgba(10, 20, 30, 0.5); backdrop-filter: blur(12px);
-            border: 1px solid rgba(212, 175, 55, 0.15); border-top-width: 3px;
-            padding: 16px 12px; border-radius: 8px; width: 154px; margin: 0 auto;
-            cursor: pointer; transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            background: rgba(10, 20, 30, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-top-width: 3px;
+            padding: 16px 12px;
+            border-radius: 8px;
+            width: 154px;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
-        .node-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(212, 175, 55, 0.15); }
+
+        .node-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(212, 175, 55, 0.15);
+        }
+
         .node-card.unreachable {
-            background: rgba(10, 20, 30, 0.3); border-color: rgba(75, 85, 99, 0.3);
-            opacity: 0.5; filter: grayscale(1); border-top-color: #4b5563 !important;
+            background: rgba(10, 20, 30, 0.3);
+            border-color: rgba(75, 85, 99, 0.3);
+            opacity: 0.5;
+            filter: grayscale(1);
+            border-top-color: #4b5563 !important;
         }
     </style>
 </head>
+
 <body class="flex h-screen">
 
     <!-- Sidebar: Sector Selection -->
-    <aside class="w-72 border-r border-[#806b45]/30 bg-[rgba(10,20,30,0.6)] flex flex-col z-10 backdrop-blur-md shadow-[4px_0_24px_rgba(0,0,0,0.6)]">
+    <aside
+        class="w-72 border-r border-[#806b45]/30 bg-[rgba(10,20,30,0.6)] flex flex-col z-10 backdrop-blur-md shadow-[4px_0_24px_rgba(0,0,0,0.6)]">
         <div class="px-6 py-6 border-b border-[#806b45]/20">
             <h2 class="font-voc text-xl font-bold tracking-wider text-[#d4af37] flex items-center gap-2">
                 <i data-lucide="radio-tower" class="w-6 h-6"></i> Telemetry
@@ -84,20 +164,31 @@
 
     <!-- Main Graph Area -->
     <main class="flex-1 relative flex flex-col bg-gradient-to-br from-[#020408] to-[rgba(10,20,30,0.4)]">
-        <header class="h-16 border-b border-[#806b45]/20 flex items-center justify-between px-8 bg-black/20 backdrop-blur-sm z-0">
-            <h1 class="text-sm font-bold tracking-wider font-voc uppercase text-white" id="current-zone-title">Awaiting Zone Selection</h1>
+        <header
+            class="h-16 border-b border-[#806b45]/20 flex items-center justify-between px-8 bg-black/20 backdrop-blur-sm z-0">
+            <h1 class="text-sm font-bold tracking-wider font-voc uppercase text-white" id="current-zone-title">Awaiting
+                Zone Selection</h1>
             <div class="flex items-center gap-5">
-                <span class="flex items-center gap-1.5 text-[10px] font-tech uppercase tracking-widest text-gray-400"><div class="w-2.5 h-2.5 rounded-full bg-[#22c55e] shadow-[0_0_8px_#22c55e]"></div> Nominal</span>
-                <span class="flex items-center gap-1.5 text-[10px] font-tech uppercase tracking-widest text-gray-400"><div class="w-2.5 h-2.5 rounded-full bg-[#eab308] shadow-[0_0_8px_#eab308]"></div> Warning</span>
-                <span class="flex items-center gap-1.5 text-[10px] font-tech uppercase tracking-widest text-gray-400"><div class="w-2.5 h-2.5 rounded-full bg-[#ef4444] shadow-[0_0_8px_#ef4444]"></div> Fault</span>
-                <span class="flex items-center gap-1.5 text-[10px] font-tech uppercase tracking-widest text-gray-400"><div class="w-2.5 h-2.5 rounded-full bg-[#4b5563]"></div> Unreachable</span>
+                <span class="flex items-center gap-1.5 text-[10px] font-tech uppercase tracking-widest text-gray-400">
+                    <div class="w-2.5 h-2.5 rounded-full bg-[#22c55e] shadow-[0_0_8px_#22c55e]"></div> Nominal
+                </span>
+                <span class="flex items-center gap-1.5 text-[10px] font-tech uppercase tracking-widest text-gray-400">
+                    <div class="w-2.5 h-2.5 rounded-full bg-[#eab308] shadow-[0_0_8px_#eab308]"></div> Warning
+                </span>
+                <span class="flex items-center gap-1.5 text-[10px] font-tech uppercase tracking-widest text-gray-400">
+                    <div class="w-2.5 h-2.5 rounded-full bg-[#ef4444] shadow-[0_0_8px_#ef4444]"></div> Fault
+                </span>
+                <span class="flex items-center gap-1.5 text-[10px] font-tech uppercase tracking-widest text-gray-400">
+                    <div class="w-2.5 h-2.5 rounded-full bg-[#4b5563]"></div> Unreachable
+                </span>
             </div>
         </header>
 
         <div class="flex-1 overflow-auto p-12 relative" id="graph-viewport">
             <!-- Center dynamic content securely -->
             <div id="graph-container" class="min-w-max min-h-max pb-32 flex justify-center items-start pt-8">
-                <div class="text-gray-500 font-tech uppercase tracking-widest flex h-full items-center justify-center pt-32 opacity-50">
+                <div
+                    class="text-gray-500 font-tech uppercase tracking-widest flex h-full items-center justify-center pt-32 opacity-50">
                     <div class="flex flex-col items-center gap-4">
                         <i data-lucide="git-merge" class="w-12 h-12"></i>
                         Select a zone from the sidebar to inspect the topology.
@@ -108,53 +199,67 @@
     </main>
 
     <!-- Drawer Overlay -->
-    <div id="drawer-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-40 opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeDrawer()"></div>
+    <div id="drawer-overlay"
+        class="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-40 opacity-0 pointer-events-none transition-opacity duration-300"
+        onclick="closeDrawer()"></div>
 
     <!-- Right Drawer (CI Properties) -->
-    <div id="ci-drawer" class="fixed top-0 right-0 w-[420px] h-full bg-[rgba(10,15,22,0.95)] backdrop-blur-xl border-l border-[#d4af37]/30 transform translate-x-full transition-transform duration-300 z-50 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.8)]">
-        
+    <div id="ci-drawer"
+        class="fixed top-0 right-0 w-[420px] h-full bg-[rgba(10,15,22,0.95)] backdrop-blur-xl border-l border-[#d4af37]/30 transform translate-x-full transition-transform duration-300 z-50 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.8)]">
+
         <div class="p-6 border-b border-[#806b45]/30 flex justify-between items-center bg-[#020408]/80">
             <div>
-                <h3 class="font-voc text-xl text-white font-bold tracking-wider uppercase" id="drawer-ci-name">CI Name</h3>
+                <h3 class="font-voc text-xl text-white font-bold tracking-wider uppercase" id="drawer-ci-name">CI Name
+                </h3>
                 <div class="flex items-center gap-3 mt-1.5">
-                    <p class="text-[10px] bg-black border border-gray-700 px-2 py-0.5 rounded text-gray-400 font-tech tracking-widest" id="drawer-ci-id">CI-ID</p>
-                    <p class="text-[10px] uppercase text-[#d4af37] font-tech tracking-wider font-bold" id="drawer-ci-type">CI Type</p>
+                    <p class="text-[10px] bg-black border border-gray-700 px-2 py-0.5 rounded text-gray-400 font-tech tracking-widest"
+                        id="drawer-ci-id">CI-ID</p>
+                    <p class="text-[10px] uppercase text-[#d4af37] font-tech tracking-wider font-bold"
+                        id="drawer-ci-type">CI Type</p>
                 </div>
             </div>
-            <button onclick="closeDrawer()" class="text-gray-400 hover:text-white transition bg-white/5 hover:bg-white/10 p-2 rounded-full">
+            <button onclick="closeDrawer()"
+                class="text-gray-400 hover:text-white transition bg-white/5 hover:bg-white/10 p-2 rounded-full">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
         </div>
-        
+
         <div class="flex-1 overflow-y-auto p-6 space-y-8 text-sm">
             <!-- State Badge -->
             <div class="flex items-center gap-4 bg-black/40 border border-white/5 p-4 rounded-lg">
                 <div class="w-4 h-4 rounded-full shadow-lg" id="drawer-status-dot"></div>
                 <div class="flex flex-col">
-                    <span class="text-[9px] text-gray-500 font-tech uppercase tracking-widest mb-0.5">Current State</span>
-                    <span class="font-bold tracking-widest uppercase font-display text-lg" id="drawer-status-text">NOMINAL</span>
+                    <span class="text-[9px] text-gray-500 font-tech uppercase tracking-widest mb-0.5">Current
+                        State</span>
+                    <span class="font-bold tracking-widest uppercase font-display text-lg"
+                        id="drawer-status-text">NOMINAL</span>
                 </div>
             </div>
-            
+
             <!-- Details Grid -->
             <div>
-                <h4 class="text-[10px] text-gray-500 uppercase tracking-widest mb-3 border-b border-[#806b45]/20 pb-1.5 flex items-center gap-2"><i data-lucide="server" class="w-3.5 h-3.5"></i> Configuration Item Data</h4>
+                <h4
+                    class="text-[10px] text-gray-500 uppercase tracking-widest mb-3 border-b border-[#806b45]/20 pb-1.5 flex items-center gap-2">
+                    <i data-lucide="server" class="w-3.5 h-3.5"></i> Configuration Item Data</h4>
                 <div class="grid grid-cols-2 gap-3">
                     <div class="p-3 bg-black/40 border border-white/5 rounded">
-                        <p class="text-[9px] text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1.5"><i data-lucide="activity" class="w-3 h-3 text-[#d4af37]"></i> Live Telemetry</p>
+                        <p class="text-[9px] text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1.5"><i
+                                data-lucide="activity" class="w-3 h-3 text-[#d4af37]"></i> Live Telemetry</p>
                         <p class="text-white font-tech text-xs tracking-wide" id="drawer-telemetry">N/A</p>
                     </div>
                     <div class="p-3 bg-black/40 border border-white/5 rounded relative">
-                        <p class="text-[9px] text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1.5"><i data-lucide="package" class="w-3 h-3 text-[#d4af37]"></i> Local Spares</p>
+                        <p class="text-[9px] text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1.5"><i
+                                data-lucide="package" class="w-3 h-3 text-[#d4af37]"></i> Local Spares</p>
                         <p class="text-white font-tech text-xs tracking-wide" id="drawer-spares">0 Units</p>
-                        <span class="text-[8px] text-gray-500 uppercase tracking-widest absolute bottom-2 right-2">(Read-only)</span>
                     </div>
                     <div class="p-3 bg-black/40 border border-white/5 rounded">
-                        <p class="text-[9px] text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1.5"><i data-lucide="calendar" class="w-3 h-3 text-[#d4af37]"></i> Commission Date</p>
+                        <p class="text-[9px] text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1.5"><i
+                                data-lucide="calendar" class="w-3 h-3 text-[#d4af37]"></i> Commission Date</p>
                         <p class="text-white font-tech text-xs tracking-wide" id="drawer-comm-date">Oct 12, 2023</p>
                     </div>
                     <div class="p-3 bg-black/40 border border-white/5 rounded">
-                        <p class="text-[9px] text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3 h-3 text-[#d4af37]"></i> Warranty</p>
+                        <p class="text-[9px] text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1.5"><i
+                                data-lucide="shield-check" class="w-3 h-3 text-[#d4af37]"></i> Warranty</p>
                         <p class="text-white font-tech text-xs tracking-wide" id="drawer-warranty">Expires: Oct 2026</p>
                     </div>
                 </div>
@@ -162,7 +267,9 @@
 
             <!-- Immutable History -->
             <div>
-                <h4 class="text-[10px] text-gray-500 uppercase tracking-widest mb-3 border-b border-[#806b45]/20 pb-1.5 flex items-center gap-2"><i data-lucide="history" class="w-3.5 h-3.5"></i> Maintenance History</h4>
+                <h4
+                    class="text-[10px] text-gray-500 uppercase tracking-widest mb-3 border-b border-[#806b45]/20 pb-1.5 flex items-center gap-2">
+                    <i data-lucide="history" class="w-3.5 h-3.5"></i> Maintenance History</h4>
                 <div class="space-y-2.5 max-h-[35vh] overflow-y-auto pr-2" id="drawer-history">
                     <!-- JS INJECTED -->
                 </div>
@@ -170,7 +277,8 @@
         </div>
 
         <div class="p-6 border-t border-[#806b45]/30 bg-[#020408]/80 pb-8">
-            <button onclick="dispatchToScheduler()" class="w-full py-3.5 bg-gradient-to-r from-[#806b45] to-[#d4af37] hover:from-[#d4af37] hover:to-[#ffd700] text-black font-display font-bold uppercase tracking-widest rounded transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.25)] hover:shadow-[0_0_25px_rgba(212,175,55,0.4)]">
+            <button onclick="dispatchToScheduler()"
+                class="w-full py-3.5 bg-gradient-to-r from-[#806b45] to-[#d4af37] hover:from-[#d4af37] hover:to-[#ffd700] text-black font-display font-bold uppercase tracking-widest rounded transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.25)] hover:shadow-[0_0_25px_rgba(212,175,55,0.4)]">
                 <i data-lucide="truck" class="w-4 h-4"></i> Dispatch to Scheduler
             </button>
         </div>
@@ -229,7 +337,7 @@
         });
 
         function getIconForType(type) {
-            switch(type) {
+            switch (type) {
                 case 'Edge Switch': return 'router';
                 case 'Depth Camera': return 'camera';
                 case 'Projector': return 'projector';
@@ -252,18 +360,18 @@
         }
 
         function selectZone(id) {
-            document.querySelectorAll('#zone-list button').forEach(b => b.classList.remove('border-[#d4af37]','bg-[rgba(212,175,55,0.1)]','text-white'));
+            document.querySelectorAll('#zone-list button').forEach(b => b.classList.remove('border-[#d4af37]', 'bg-[rgba(212,175,55,0.1)]', 'text-white'));
             const btn = document.getElementById('btn-' + id);
-            if(btn) btn.classList.add('border-[#d4af37]','bg-[rgba(212,175,55,0.1)]','text-white');
-            
+            if (btn) btn.classList.add('border-[#d4af37]', 'bg-[rgba(212,175,55,0.1)]', 'text-white');
+
             const zone = MOCK_ZONES.find(z => z.id === id);
             document.getElementById('current-zone-title').innerHTML = `Topology &mdash; <span class="text-[#d4af37]">${zone.name}</span>`;
-            
+
             const roots = zone.cis.filter(c => c.isUpstream);
             let html = `<div class="tree inline-block mt-8"><ul>`;
             roots.forEach(r => { html += generateTreeHTML(r.id, zone.cis, false); });
             html += `</ul></div>`;
-            
+
             document.getElementById('graph-container').innerHTML = html;
             lucide.createIcons();
             closeDrawer();
@@ -272,11 +380,11 @@
         function generateTreeHTML(nodeId, cis, parentFaulted) {
             const node = cis.find(n => n.id === nodeId);
             if (!node) return '';
-            
+
             let isUnreachable = parentFaulted;
             let renderStatus = isUnreachable ? 'unreachable' : node.status;
             let nextParentFaulted = parentFaulted || node.status === 'fault';
-            
+
             const children = cis.filter(n => n.uplink === node.id);
             const color = statusColors[renderStatus];
 
@@ -302,21 +410,21 @@
             let ci = null; let zName = '';
             MOCK_ZONES.forEach(z => {
                 const found = z.cis.find(c => c.id === ciId);
-                if(found) { ci = found; zName = z.name; }
+                if (found) { ci = found; zName = z.name; }
             });
-            if(!ci) return;
+            if (!ci) return;
 
             document.getElementById('drawer-ci-name').textContent = ci.name;
             document.getElementById('drawer-ci-id').textContent = ci.id;
             document.getElementById('drawer-ci-type').textContent = ci.type;
-            
+
             const renderStatus = isUnreachable ? 'unreachable' : ci.status;
             document.getElementById('drawer-status-dot').style.backgroundColor = statusColors[renderStatus];
             document.getElementById('drawer-status-dot').style.boxShadow = `0 0 10px ${statusColors[renderStatus]}`;
             document.getElementById('drawer-status-text').textContent = renderStatus;
             document.getElementById('drawer-status-text').style.color = statusColors[renderStatus];
 
-            if(isUnreachable) {
+            if (isUnreachable) {
                 document.getElementById('drawer-telemetry').textContent = 'UNREACHABLE (Upstream Fault)';
                 document.getElementById('drawer-telemetry').className = 'text-[#4b5563] font-tech text-xs tracking-wide truncate';
             } else {
@@ -354,4 +462,5 @@
         renderSidebar();
     </script>
 </body>
+
 </html>
