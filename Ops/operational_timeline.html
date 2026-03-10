@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operational Timeline & Constraints</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;600&family=Orbitron:wght@400;600;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --voc-gold: #d4af37;
+            --voc-bronze: #806b45;
+            --bar-load: #d4af37;
+            --bar-load-peak: #ef4444;
+        }
+
+        body {
+            background-color: transparent;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            padding: 24px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #806b45;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4af37;
+        }
+
+        .font-voc {
+            font-family: 'Cinzel', serif;
+        }
+
+        .font-tech {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-display {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .voc-panel {
+            background: rgba(10, 20, 30, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Timeline Custom Styles */
+        .timeline-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 8px 0;
+            transition: background-color 0.2s ease;
+        }
+
+        .timeline-row:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .time-label {
+            width: 60px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #9ca3af;
+            text-align: right;
+        }
+
+        .time-label.peak {
+            color: #ef4444;
+        }
+
+        .bar-container {
+            flex-grow: 1;
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            background: var(--bar-load);
+        }
+
+        .bar-fill.is-peak {
+            background: var(--bar-load-peak);
+        }
+
+        .percentage-label {
+            width: 40px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            color: #9ca3af;
+            text-align: right;
+        }
+
+        .percentage-label.is-peak {
+            color: #f87171;
+            font-weight: 700;
+        }
+
+        /* Forecast Map Grid Styles */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .forecast-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid transparent;
+        }
+
+        .forecast-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Status Borders */
+        .status-low {
+            border-color: rgba(34, 197, 94, 0.5);
+            color: #4ade80;
+        }
+
+        .status-med {
+            border-color: rgba(212, 175, 55, 0.5);
+            color: #d4af37;
+        }
+
+        .status-full {
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #f87171;
+        }
+
+        .status-empty {
+            background: transparent;
+            border-color: transparent;
+            color: #475569;
+            pointer-events: none;
+        }
+
+        .forecast-cell.selected {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Modal Input */
+        .modal-input {
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.3s ease;
+            color-scheme: dark;
+        }
+
+        .modal-input:focus {
+            border-color: var(--voc-gold);
+        }
+    </style>
+</head>
+
+<body class="pb-20">
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+
+        <div class="lg:col-span-2 space-y-6 h-full flex flex-col">
+
+            <div class="voc-panel p-6 flex-grow flex flex-col h-[calc(100vh-48px)]">
+                <div class="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="clock" class="w-5 h-5 text-[#d4af37]"></i>
+                        <h2
+                            class="font-voc text-xl text-white font-bold tracking-wider uppercase flex items-center gap-3">
+                            Operational Timeline
+                            <span class="text-[10px] bg-blue-600 text-white px-2 py-1 rounded font-tech tracking-widest"
+                                id="display-date">FEB 23, 2026</span>
+                        </h2>
+                    </div>
+                    <span
+                        class="text-[10px] text-gray-500 uppercase tracking-widest font-tech font-bold flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Live Data
+                    </span>
+                </div>
+
+                <div class="flex gap-6 mb-6 px-4">
+                    <span
+                        class="flex items-center gap-2 text-[10px] text-gray-400 font-tech uppercase tracking-widest">
+                        <div class="w-3 h-3 rounded-sm bg-[#d4af37]"></div> Current Load
+                    </span>
+                    <span
+                        class="flex items-center gap-2 text-[10px] text-gray-400 font-tech uppercase tracking-widest">
+                        <div class="w-3 h-3 rounded-sm bg-white/5 border border-white/10"></div> Available Capacity
+                    </span>
+                </div>
+
+                <div class="overflow-y-auto pr-4 flex-grow space-y-2" id="timeline-container">
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-1 space-y-6 flex flex-col h-full">
+
+            <div class="voc-panel p-6">
+                <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+                    <h3 class="font-voc text-sm text-white font-bold tracking-wider flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-4 h-4 text-[#d4af37]"></i> FORECAST MAP
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <button class="text-gray-400 hover:text-white transition"><i data-lucide="chevron-left"
+                                class="w-4 h-4"></i></button>
+                        <span class="text-xs text-white font-display font-bold tracking-widest uppercase">FEB
+                            2026</span>
+                        <button class="text-gray-400 hover:text-white transition"><i data-lucide="chevron-right"
+                                class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-2 text-center mb-3">
+                    <span class="text-[9px] text-gray-500 uppercase font-tech tracking-widest">M</span>
+                    <span class="text-[9px] text-gray-500 uppercase font-tech tracking-widest">T</span>
+                    <span class="text-[9px] text-gray-500 uppercase font-tech tracking-widest">W</span>
+                    <span class="text-[9px] text-gray-500 uppercase font-tech tracking-widest">T</span>
+                    <span class="text-[9px] text-gray-500 uppercase font-tech tracking-widest">F</span>
+                    <span class="text-[9px] text-[#d4af37] uppercase font-tech tracking-widest font-bold">S</span>
+                    <span class="text-[9px] text-[#d4af37] uppercase font-tech tracking-widest font-bold">S</span>
+                </div>
+
+                <div class="calendar-grid mb-6" id="forecast-grid"></div>
+
+                <div
+                    class="flex justify-between items-center text-[9px] text-gray-500 uppercase font-tech tracking-widest font-bold px-2">
+                    <span class="flex items-center gap-1">
+                        <div class="w-2 h-2 rounded-full border border-green-500 bg-green-500/20"></div> LOW
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <div class="w-2 h-2 rounded-full border border-yellow-500 bg-yellow-500/20"></div> MED
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <div class="w-2 h-2 rounded-full border border-red-500 bg-red-500/20"></div> FULL
+                    </span>
+                </div>
+            </div>
+
+            <div class="voc-panel p-6 flex-grow flex flex-col relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
+
+                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-white/10 z-10">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-white"></i>
+                    <h3 class="font-voc text-sm text-white font-bold tracking-wider">ACTIVE CONSTRAINTS</h3>
+                </div>
+
+                <div class="flex-grow overflow-y-auto pr-2 space-y-4 z-10">
+
+                    <div class="p-3 bg-red-950/20 border border-red-900/30 rounded-lg border-l-2 border-l-red-500">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-display font-bold text-red-300 tracking-wider">13:00 -
+                                13:15</span>
+                            <span class="text-[9px] font-bold text-red-400 uppercase tracking-widest">Peak Full</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 font-tech">98% Capacity Reached</p>
+                    </div>
+
+                    <div class="p-3 bg-red-950/20 border border-red-900/30 rounded-lg border-l-2 border-l-red-500">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-display font-bold text-red-300 tracking-wider">14:00 -
+                                14:15</span>
+                            <span class="text-[9px] font-bold text-red-400 uppercase tracking-widest">Peak Full</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 font-tech">100% Capacity Reached</p>
+                    </div>
+
+                    <div
+                        class="p-3 bg-yellow-950/20 border border-yellow-900/30 rounded-lg border-l-2 border-l-yellow-500">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-display font-bold text-yellow-300 tracking-wider">15:00 -
+                                15:15</span>
+                            <span
+                                class="text-[9px] font-bold text-yellow-500 uppercase tracking-widest">Busy</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 font-tech">91% Capacity Reached</p>
+                    </div>
+
+                    <div
+                        class="p-3 bg-black/40 border border-white/5 rounded-lg border-l-2 border-l-purple-500 mt-6">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-display font-bold text-purple-300 tracking-wider">16:00 -
+                                17:00</span>
+                            <span class="text-[9px] font-bold text-purple-400 uppercase tracking-widest">VIP
+                                Block</span>
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-tech">Private Corporate Booking (Gate C)</p>
+                    </div>
+
+                    <div class="p-3 bg-black/40 border border-white/5 rounded-lg border-l-2 border-l-gray-500">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-display font-bold text-gray-300 tracking-wider">10:00 -
+                                10:30</span>
+                            <span
+                                class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">System</span>
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-tech">Morning Hardware Reboot / Calibration</p>
+                    </div>
+
+                </div>
+
+                <button onclick="openBlockModal()"
+                    class="w-full mt-4 py-3 bg-white/5 hover:bg-white/10 border border-white/20 text-white text-[10px] uppercase font-tech tracking-widest font-bold rounded transition flex items-center justify-center gap-2 z-10">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Block New Slot
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="block-modal"
+        class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="voc-panel p-8 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300"
+            id="block-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-voc text-lg text-white font-bold tracking-wider">Block Time Slot</h3>
+                <button onclick="closeBlockModal()" class="text-gray-400 hover:text-white transition"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <form onsubmit="event.preventDefault(); closeBlockModal(); showToast();" class="space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-[10px] text-gray-400 uppercase font-tech tracking-widest mb-1">Start
+                            Time</label>
+                        <input type="time" class="modal-input" required>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase font-tech tracking-widest mb-1">End
+                            Time</label>
+                        <input type="time" class="modal-input" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] text-gray-400 uppercase font-tech tracking-widest mb-1">Constraint
+                        Type</label>
+                    <select class="modal-input cursor-pointer" required>
+                        <option value="system">System Maintenance</option>
+                        <option value="vip">VIP Private Booking</option>
+                        <option value="incident">Operational Incident</option>
+                        <option value="manual">Manual Override</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] text-gray-400 uppercase font-tech tracking-widest mb-1">Reason /
+                        Notes</label>
+                    <textarea class="modal-input resize-none h-20"
+                        placeholder="Enter brief details for the operations log..." required></textarea>
+                </div>
+
+                <div class="flex gap-3 pt-4 border-t border-white/10">
+                    <button type="button" onclick="closeBlockModal()"
+                        class="flex-1 py-3 text-xs text-gray-400 hover:text-white font-tech uppercase tracking-widest transition">Cancel</button>
+                    <button type="submit"
+                        class="flex-1 py-3 bg-[#d4af37] text-black font-bold text-xs uppercase font-tech tracking-widest rounded hover:bg-white transition shadow-[0_0_15px_rgba(212,175,55,0.3)]">Apply
+                        Block</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-900/90 border border-green-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3 backdrop-blur-md z-50 transition-all duration-300 transform translate-y-24 opacity-0">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-green-400"></i>
+        <span class="text-sm font-tech font-bold tracking-wide">Slot constraint applied successfully.</span>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ----------------------------------------------------
+        // 1. GENERATE TIMELINE (Two-Tier: Current Load vs Available)
+        // ----------------------------------------------------
+        function generateTimeline() {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = '';
+
+            const times = [];
+            for (let h = 8; h <= 18; h++) {
+                times.push(`${h.toString().padStart(2, '0')}:00`);
+                times.push(`${h.toString().padStart(2, '0')}:30`);
+            }
+
+            times.forEach(time => {
+                let baseDemand = 30;
+
+                // Peak logic for early afternoon
+                if (time >= "13:00" && time <= "14:30") baseDemand = 90;
+                if (time === "15:30") baseDemand = 100;
+
+                let actualCap = Math.min(100, Math.floor(baseDemand + (Math.random() * 20 - 5)));
+
+                // System block at 10:00 - 10:30
+                if (time === "10:00" || time === "10:30") actualCap = 45;
+                // VIP block at 16:00
+                if (time === "16:00" || time === "16:30") actualCap = 35;
+
+                const isPeak = actualCap >= 90;
+                const labelColorClass = isPeak ? 'peak' : '';
+                const barPeakClass = isPeak ? 'is-peak' : '';
+
+                const rowHtml = `
+                    <div class="timeline-row">
+                        <div class="time-label ${labelColorClass}">${time}</div>
+                        <div class="bar-container">
+                            <div class="bar-fill ${barPeakClass}" style="width: ${actualCap}%"></div>
+                        </div>
+                        <div class="percentage-label ${barPeakClass}">${actualCap}%</div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', rowHtml);
+            });
+        }
+
+        // ----------------------------------------------------
+        // 2. GENERATE FORECAST MAP (Border-colored Calendar)
+        // ----------------------------------------------------
+        function generateForecastMap() {
+            const grid = document.getElementById('forecast-grid');
+            grid.innerHTML = '';
+
+            const daysInMonth = 28;
+            const startDayOffset = 6;
+
+            for (let i = 0; i < startDayOffset; i++) {
+                grid.insertAdjacentHTML('beforeend', `<div class="forecast-cell status-empty"></div>`);
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                let rand = Math.random();
+                let statusClass = 'status-low';
+                if (rand > 0.8) statusClass = 'status-full';
+                else if (rand > 0.5) statusClass = 'status-med';
+
+                const isSelected = i === 23 ? 'selected' : '';
+
+                grid.insertAdjacentHTML('beforeend', `
+                    <div class="forecast-cell ${statusClass} ${isSelected}" onclick="selectDay(this, ${i})">
+                        ${i}
+                    </div>
+                `);
+            }
+        }
+
+        function selectDay(element, day) {
+            document.querySelectorAll('.forecast-cell').forEach(c => c.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('display-date').innerText = `FEB ${day.toString().padStart(2, '0')}, 2026`;
+            generateTimeline();
+        }
+
+        // ----------------------------------------------------
+        // 3. MODAL LOGIC
+        // ----------------------------------------------------
+        function openBlockModal() {
+            const modal = document.getElementById('block-modal');
+            const content = document.getElementById('block-modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeBlockModal() {
+            const modal = document.getElementById('block-modal');
+            const content = document.getElementById('block-modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        // Initialize modules
+        generateTimeline();
+        generateForecastMap();
+    </script>
+</body>
+
+</html>
