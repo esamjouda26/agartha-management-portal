@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Sessions & PAM Audit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;600&family=Orbitron:wght@400;600;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --voc-gold: #d4af37;
+            --voc-bronze: #806b45;
+        }
+
+        body {
+            background-color: transparent;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            padding: 24px;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #806b45; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d4af37; }
+
+        .font-voc { font-family: 'Cinzel', serif; }
+        .font-tech { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Orbitron', sans-serif; }
+
+        .voc-panel {
+            background: rgba(10, 20, 30, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Session Table */
+        .session-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .session-table thead th {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #6b7280;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: left;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            background: rgba(10, 20, 30, 0.95);
+            z-index: 5;
+        }
+        .session-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .session-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+        .session-table tbody td {
+            padding: 12px;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: middle;
+        }
+
+        /* MAD Progress Bar */
+        .mad-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+        .mad-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1s linear, background-color 0.5s ease;
+        }
+
+        /* Kill Button */
+        .kill-btn {
+            padding: 5px 12px;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            font-family: 'Inter', sans-serif;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .kill-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: #ef4444;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Global Lockout */
+        .lockout-btn {
+            padding: 10px 20px;
+            border: 2px solid #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .lockout-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.3), inset 0 0 12px rgba(239, 68, 68, 0.1);
+        }
+        .lockout-btn.activated {
+            background: #ef4444;
+            color: white;
+            animation: lockout-pulse 1s infinite;
+        }
+
+        @keyframes lockout-pulse {
+            0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 28px rgba(239, 68, 68, 0.8); }
+        }
+
+        /* Audit Entry */
+        .audit-entry {
+            display: flex;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 2px solid rgba(255, 255, 255, 0.08);
+            font-size: 11px;
+            transition: background-color 0.2s ease;
+        }
+        .audit-entry:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .audit-entry .audit-ts {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            color: #6b7280;
+            white-space: nowrap;
+            min-width: 80px;
+            letter-spacing: 0.05em;
+        }
+
+        /* Bandwidth indicator */
+        .bw-indicator {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 9px;
+            font-family: 'Orbitron', sans-serif;
+        }
+        .bw-high { color: #f87171; }
+        .bw-normal { color: #9ca3af; }
+
+        /* Confirmation Modal */
+        .confirm-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .confirm-modal.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Toast */
+        .toast-notification {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            opacity: 0;
+            transition: all 0.35s ease;
+            z-index: 200;
+        }
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Session row blink on kill */
+        .session-row-killing {
+            animation: row-fade 0.6s ease forwards;
+        }
+        @keyframes row-fade {
+            0% { opacity: 1; background: rgba(239, 68, 68, 0.15); }
+            100% { opacity: 0; height: 0; padding: 0; overflow: hidden; }
+        }
+    </style>
+</head>
+
+<body class="pb-10">
+
+    <!-- ===== HEADER ===== -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <i data-lucide="shield-alert" class="w-5 h-5 text-[#d4af37]"></i>
+            <h2 class="font-voc text-xl text-white font-bold tracking-wider uppercase">Active Sessions & PAM Audit</h2>
+            <span class="text-[10px] bg-emerald-600/80 text-white px-2 py-0.5 rounded font-tech tracking-widest uppercase ml-2" id="session-status-badge">LIVE</span>
+        </div>
+        <button class="lockout-btn" id="lockout-btn" onclick="confirmLockout()">
+            <i data-lucide="shield-off" class="w-4 h-4"></i>
+            Global Lockout — Terminate All Vendors
+        </button>
+    </div>
+
+    <!-- ===== KPI ROW ===== -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="voc-panel p-4">
+            <p class="text-[9px] font-tech uppercase tracking-widest text-gray-500 mb-1">Active Sessions</p>
+            <p class="font-display text-2xl text-white" id="kpi-active">5</p>
+        </div>
+        <div class="voc-panel p-4">
+            <p class="text-[9px] font-tech uppercase tracking-widest text-gray-500 mb-1">Near MAD Limit</p>
+            <p class="font-display text-2xl text-amber-400" id="kpi-near-mad">1</p>
+        </div>
+        <div class="voc-panel p-4">
+            <p class="text-[9px] font-tech uppercase tracking-widest text-gray-500 mb-1">SLA Breached</p>
+            <p class="font-display text-2xl text-red-400" id="kpi-breached">0</p>
+        </div>
+        <div class="voc-panel p-4">
+            <p class="text-[9px] font-tech uppercase tracking-widest text-gray-500 mb-1">Terminated Today</p>
+            <p class="font-display text-2xl text-gray-300" id="kpi-terminated">3</p>
+        </div>
+    </div>
+
+    <!-- ===== LIVE SESSION GRID ===== -->
+    <div class="voc-panel p-6 mb-6">
+        <div class="flex items-center gap-2 mb-5 pb-3 border-b border-white/10">
+            <i data-lucide="radio" class="w-4 h-4 text-[#d4af37]"></i>
+            <h3 class="font-voc text-sm text-white font-bold tracking-wider">LIVE SESSION GRID</h3>
+            <span class="text-[10px] text-gray-500 uppercase tracking-widest font-tech font-bold flex items-center gap-2 ml-auto">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Auto-Refresh 5s
+            </span>
+        </div>
+
+        <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
+            <table class="session-table" id="session-table">
+                <thead>
+                    <tr>
+                        <th>WO ID</th>
+                        <th>Target CI</th>
+                        <th>Vendor</th>
+                        <th>Authorized Identity</th>
+                        <th>Elapsed / MAD</th>
+                        <th>Bandwidth (Rx/Tx)</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="session-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===== IMMUTABLE AUDIT FEED ===== -->
+    <div class="voc-panel p-6">
+        <div class="flex items-center gap-2 mb-5 pb-3 border-b border-white/10">
+            <i data-lucide="scroll-text" class="w-4 h-4 text-[#d4af37]"></i>
+            <h3 class="font-voc text-sm text-white font-bold tracking-wider">IMMUTABLE AUDIT FEED</h3>
+            <span class="text-[9px] text-gray-600 font-tech uppercase tracking-widest ml-auto">Read-Only · Tamper-Evident Ledger</span>
+        </div>
+        <div class="space-y-2 max-h-64 overflow-y-auto pr-2" id="audit-feed"></div>
+    </div>
+
+    <!-- ===== CONFIRMATION MODAL ===== -->
+    <div class="confirm-modal" id="confirm-modal">
+        <div class="voc-panel p-8 max-w-md w-full mx-4">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>
+                </div>
+                <div>
+                    <h3 class="font-voc text-lg text-white font-bold tracking-wider" id="modal-title">Confirm Action</h3>
+                    <p class="text-[10px] font-tech text-gray-400 uppercase tracking-widest" id="modal-subtitle">This action is irreversible</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-300 font-tech mb-6 leading-relaxed" id="modal-body">
+                This will immediately terminate the session and push a RADIUS CoA disconnect.
+            </p>
+            <div class="flex gap-3">
+                <button onclick="closeModal()"
+                    class="flex-1 py-3 text-xs text-gray-400 hover:text-white font-tech uppercase tracking-widest transition border border-white/10 rounded hover:border-white/30">Cancel</button>
+                <button onclick="executeModalAction()"
+                    class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase font-tech tracking-widest rounded transition shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                    id="modal-confirm-btn">Confirm Kill</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast-notification" id="toast">
+        <div class="bg-red-900/90 border border-red-500/50 text-white px-6 py-3.5 rounded-lg shadow-xl flex items-center gap-3 backdrop-blur-md" id="toast-inner">
+            <i data-lucide="shield-off" class="w-5 h-5 text-red-400"></i>
+            <span class="text-sm font-tech font-bold tracking-wide" id="toast-msg"></span>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ===================================================================
+        // MOCK SESSION DATA
+        // ===================================================================
+        let activeSessions = [
+            {
+                woId: 'WO-4087', ciId: 'CI-2001', ciName: 'Edge Switch B1',
+                vendor: 'Cisco TAC', identity: 'noc-tech@cisco-tac.federated.io',
+                identityType: 'SAML', topology: 'remote',
+                elapsedMin: 42, madMin: 90,
+                rxKbps: 120, txKbps: 85
+            },
+            {
+                woId: 'WO-4088', ciId: 'CI-1004', ciName: 'Projector M1-A',
+                vendor: 'Epson Tech', identity: '9C:B6:D0:AA:11:3F',
+                identityType: 'MAB', topology: 'onsite',
+                elapsedMin: 28, madMin: 120,
+                rxKbps: 45, txKbps: 12
+            },
+            {
+                woId: 'WO-4089', ciId: 'CI-6007', ciName: 'HVAC Controller',
+                vendor: 'Schneider Electric', identity: 'field-eng@schneider.federated.io',
+                identityType: 'SAML', topology: 'remote',
+                elapsedMin: 15, madMin: 60,
+                rxKbps: 210, txKbps: 340
+            },
+            {
+                woId: 'WO-4090', ciId: 'CI-4002', ciName: 'Depth Cam GE-01',
+                vendor: 'Orbbec Support', identity: 'diag-agent@orbbec.federated.io',
+                identityType: 'SAML', topology: 'remote',
+                elapsedMin: 55, madMin: 60,
+                rxKbps: 68, txKbps: 22
+            },
+            {
+                woId: 'WO-4091', ciId: 'CI-3004', ciName: 'PLC Corridor W',
+                vendor: 'Siemens PLC', identity: 'A4:CF:12:6B:90:EE',
+                identityType: 'MAB', topology: 'onsite',
+                elapsedMin: 112, madMin: 120,
+                rxKbps: 34, txKbps: 8
+            },
+        ];
+
+        const auditLog = [
+            { ts: '13:45:22', event: 'SESSION_CLOSED', woId: 'WO-4085', detail: 'Orbbec Support session terminated normally. Duration: 34m. CoA sent.' },
+            { ts: '12:21:08', event: 'SESSION_CLOSED', woId: 'WO-4083', detail: 'Siemens PLC session completed. Duration: 52m. PAM socket closed.' },
+            { ts: '11:58:00', event: 'SESSION_KILLED', woId: 'WO-4080', detail: 'Emergency kill by admin. RADIUS CoA disconnect pushed for MAC AA:BB:CC:DD:EE:FF.' },
+            { ts: '10:30:15', event: 'SESSION_EXPIRED', woId: 'WO-4079', detail: 'MAD limit reached (120m). Auto-teardown executed. Vendor: Crestron Engineering.' },
+            { ts: '09:15:00', event: 'SESSION_CLOSED', woId: 'WO-4077', detail: 'Axis Communications session completed. Duration: 28m. VLAN quarantine released.' },
+            { ts: '08:45:30', event: 'LOCKOUT_LIFTED', woId: '—', detail: 'Global lockout lifted by admin after morning inspection. All vendor access re-enabled.' },
+        ];
+
+        let pendingAction = null;
+        let isLockedOut = false;
+
+        // ===================================================================
+        // RENDER SESSIONS
+        // ===================================================================
+        function renderSessions() {
+            const tbody = document.getElementById('session-tbody');
+            tbody.innerHTML = '';
+
+            if (isLockedOut || activeSessions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-12">
+                            <div class="flex flex-col items-center gap-3">
+                                <i data-lucide="${isLockedOut ? 'shield-off' : 'check-circle-2'}" class="w-8 h-8 ${isLockedOut ? 'text-red-400' : 'text-gray-600'}"></i>
+                                <p class="text-sm font-tech ${isLockedOut ? 'text-red-400' : 'text-gray-500'}">${isLockedOut ? 'GLOBAL LOCKOUT ACTIVE — All vendor sessions terminated' : 'No active vendor sessions'}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            activeSessions.forEach((s, idx) => {
+                const pct = Math.min(100, (s.elapsedMin / s.madMin) * 100);
+                const barColor = pct >= 90 ? '#ef4444' : (pct >= 70 ? '#eab308' : '#22c55e');
+                const pctTextColor = pct >= 90 ? 'text-red-400' : (pct >= 70 ? 'text-amber-400' : 'text-emerald-400');
+                const isHighBw = s.txKbps > 200 || s.rxKbps > 200;
+                const bwClass = isHighBw ? 'bw-high' : 'bw-normal';
+                const identityBadge = s.identityType === 'SAML'
+                    ? '<span class="text-[8px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold tracking-widest">SAML</span>'
+                    : '<span class="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-bold tracking-widest">MAB</span>';
+
+                const tr = document.createElement('tr');
+                tr.id = `session-row-${idx}`;
+                tr.innerHTML = `
+                    <td>
+                        <span class="font-display text-xs font-bold tracking-wider text-white">${s.woId}</span>
+                    </td>
+                    <td>
+                        <p class="text-white text-xs font-medium">${s.ciName}</p>
+                        <p class="text-[9px] text-gray-500 font-tech">${s.ciId}</p>
+                    </td>
+                    <td class="text-xs text-gray-300 font-tech">${s.vendor}</td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            ${identityBadge}
+                            <span class="text-[11px] text-gray-300 font-tech truncate max-w-[180px]">${s.identity}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="font-display text-[10px] ${pctTextColor} tracking-wider">${s.elapsedMin}m / ${s.madMin}m</span>
+                                <span class="font-display text-[9px] ${pctTextColor} tracking-wider">${Math.round(pct)}%</span>
+                            </div>
+                            <div class="mad-bar-container">
+                                <div class="mad-bar-fill" style="width:${pct}%; background:${barColor}"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="bw-indicator ${bwClass}">
+                            <span>↓ ${s.rxKbps} kbps</span>
+                            <span>↑ ${s.txKbps} kbps ${isHighBw ? '⚠' : ''}</span>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <button class="kill-btn" onclick="confirmKill(${idx})">
+                            Kill Session
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updateKPIs();
+            lucide.createIcons();
+        }
+
+        // ===================================================================
+        // RENDER AUDIT FEED
+        // ===================================================================
+        function renderAudit() {
+            const feed = document.getElementById('audit-feed');
+            feed.innerHTML = auditLog.map(a => {
+                const eventColor = {
+                    'SESSION_CLOSED': 'text-emerald-400',
+                    'SESSION_KILLED': 'text-red-400',
+                    'SESSION_EXPIRED': 'text-amber-400',
+                    'LOCKOUT_LIFTED': 'text-blue-400',
+                    'LOCKOUT_ACTIVATED': 'text-red-400',
+                }[a.event] || 'text-gray-400';
+
+                const borderColor = {
+                    'SESSION_CLOSED': 'border-l-emerald-500/50',
+                    'SESSION_KILLED': 'border-l-red-500/50',
+                    'SESSION_EXPIRED': 'border-l-amber-500/50',
+                    'LOCKOUT_LIFTED': 'border-l-blue-500/50',
+                    'LOCKOUT_ACTIVATED': 'border-l-red-500/50',
+                }[a.event] || '';
+
+                return `
+                    <div class="audit-entry ${borderColor}">
+                        <div class="audit-ts">${a.ts} MYT</div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <span class="text-[9px] ${eventColor} font-bold uppercase tracking-widest font-tech">${a.event}</span>
+                                ${a.woId !== '—' ? `<span class="font-display text-[9px] text-gray-400 tracking-wider">${a.woId}</span>` : ''}
+                            </div>
+                            <p class="text-[11px] text-gray-400 font-tech leading-relaxed">${a.detail}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ===================================================================
+        // KPIS
+        // ===================================================================
+        function updateKPIs() {
+            document.getElementById('kpi-active').textContent = activeSessions.length;
+            const nearMAD = activeSessions.filter(s => (s.elapsedMin / s.madMin) >= 0.85).length;
+            const breached = activeSessions.filter(s => s.elapsedMin > s.madMin).length;
+            document.getElementById('kpi-near-mad').textContent = nearMAD;
+            document.getElementById('kpi-breached').textContent = breached;
+        }
+
+        // ===================================================================
+        // KILL SESSION
+        // ===================================================================
+        function confirmKill(idx) {
+            const s = activeSessions[idx];
+            pendingAction = { type: 'kill', idx };
+
+            document.getElementById('modal-title').textContent = 'Kill Session';
+            document.getElementById('modal-subtitle').textContent = s.woId + ' — ' + s.vendor;
+            const mechanism = s.identityType === 'MAB'
+                ? 'This will push an immediate RADIUS Change of Authorization (CoA) disconnect for MAC address <strong>' + s.identity + '</strong>.'
+                : 'This will tear down the PAM proxy socket for <strong>' + s.identity + '</strong>.';
+            document.getElementById('modal-body').innerHTML = mechanism + '<br><br><span class="text-[10px] text-gray-500 uppercase tracking-widest">This action is logged to the immutable audit ledger.</span>';
+            document.getElementById('modal-confirm-btn').textContent = 'Confirm Kill';
+
+            openModal();
+        }
+
+        function confirmLockout() {
+            if (isLockedOut) {
+                // Lift lockout
+                isLockedOut = false;
+                document.getElementById('lockout-btn').classList.remove('activated');
+                document.getElementById('session-status-badge').textContent = 'LIVE';
+                document.getElementById('session-status-badge').className = 'text-[10px] bg-emerald-600/80 text-white px-2 py-0.5 rounded font-tech tracking-widest uppercase ml-2';
+
+                auditLog.unshift({
+                    ts: getCurrentTime(),
+                    event: 'LOCKOUT_LIFTED',
+                    woId: '—',
+                    detail: 'Global vendor lockout lifted by maintenance manager. Vendor access re-enabled.'
+                });
+                renderAudit();
+                showToast('Global lockout lifted. Vendor access re-enabled.', 'info');
+                return;
+            }
+
+            pendingAction = { type: 'lockout' };
+            document.getElementById('modal-title').textContent = 'Global Lockout';
+            document.getElementById('modal-subtitle').textContent = 'EMERGENCY ACTION';
+            document.getElementById('modal-body').innerHTML = `
+                This will <strong>immediately terminate ALL ${activeSessions.length} active vendor sessions</strong>.<br><br>
+                • All RADIUS CoA disconnects will be pushed<br>
+                • All PAM proxy sockets will be torn down<br>
+                • No new vendor sessions will be permitted until lockout is lifted<br><br>
+                <span class="text-[10px] text-red-400 uppercase tracking-widest font-bold">This is a facility-wide emergency action.</span>
+            `;
+            document.getElementById('modal-confirm-btn').textContent = 'Activate Lockout';
+            openModal();
+        }
+
+        function executeModalAction() {
+            if (!pendingAction) return;
+
+            if (pendingAction.type === 'kill') {
+                const idx = pendingAction.idx;
+                const s = activeSessions[idx];
+                const mechanism = s.identityType === 'MAB' ? 'RADIUS CoA disconnect' : 'PAM proxy socket teardown';
+
+                auditLog.unshift({
+                    ts: getCurrentTime(),
+                    event: 'SESSION_KILLED',
+                    woId: s.woId,
+                    detail: `Emergency kill by maintenance manager. ${mechanism} for ${s.identity}. Target: ${s.ciName} (${s.ciId}). Vendor: ${s.vendor}.`
+                });
+
+                // Animate row removal
+                const row = document.getElementById(`session-row-${idx}`);
+                if (row) row.classList.add('session-row-killing');
+
+                setTimeout(() => {
+                    activeSessions.splice(idx, 1);
+                    const terminated = parseInt(document.getElementById('kpi-terminated').textContent) + 1;
+                    document.getElementById('kpi-terminated').textContent = terminated;
+                    renderSessions();
+                    renderAudit();
+                }, 600);
+
+                showToast(`${s.woId} killed. ${mechanism} executed.`, 'error');
+            }
+
+            if (pendingAction.type === 'lockout') {
+                isLockedOut = true;
+                document.getElementById('lockout-btn').classList.add('activated');
+                document.getElementById('session-status-badge').textContent = 'LOCKOUT';
+                document.getElementById('session-status-badge').className = 'text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-tech tracking-widest uppercase ml-2 animate-pulse';
+
+                const count = activeSessions.length;
+                activeSessions.forEach(s => {
+                    const mechanism = s.identityType === 'MAB' ? 'RADIUS CoA disconnect' : 'PAM proxy teardown';
+                    auditLog.unshift({
+                        ts: getCurrentTime(),
+                        event: 'SESSION_KILLED',
+                        woId: s.woId,
+                        detail: `Global lockout kill. ${mechanism} for ${s.identity}. Vendor: ${s.vendor}.`
+                    });
+                });
+                auditLog.unshift({
+                    ts: getCurrentTime(),
+                    event: 'LOCKOUT_ACTIVATED',
+                    woId: '—',
+                    detail: `Global vendor lockout activated. ${count} sessions terminated. All vendor access suspended.`
+                });
+
+                const terminated = parseInt(document.getElementById('kpi-terminated').textContent) + count;
+                document.getElementById('kpi-terminated').textContent = terminated;
+                activeSessions = [];
+                renderSessions();
+                renderAudit();
+                showToast(`GLOBAL LOCKOUT: ${count} sessions terminated. All vendor access suspended.`, 'error');
+            }
+
+            closeModal();
+            pendingAction = null;
+        }
+
+        // ===================================================================
+        // MODAL
+        // ===================================================================
+        function openModal() {
+            const modal = document.getElementById('confirm-modal');
+            modal.style.display = 'flex';
+            requestAnimationFrame(() => modal.classList.add('open'));
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('open');
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
+            pendingAction = null;
+        }
+
+        // ===================================================================
+        // TOAST
+        // ===================================================================
+        function showToast(msg, type = 'error') {
+            const toast = document.getElementById('toast');
+            const inner = document.getElementById('toast-inner');
+
+            if (type === 'error') {
+                inner.className = 'bg-red-900/90 border border-red-500/50 text-white px-6 py-3.5 rounded-lg shadow-xl flex items-center gap-3 backdrop-blur-md';
+            } else {
+                inner.className = 'bg-blue-900/90 border border-blue-500/50 text-white px-6 py-3.5 rounded-lg shadow-xl flex items-center gap-3 backdrop-blur-md';
+            }
+
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4500);
+        }
+
+        // ===================================================================
+        // SIMULATE ELAPSED TIME TICKING
+        // ===================================================================
+        function tickElapsed() {
+            if (isLockedOut) return;
+            activeSessions.forEach(s => {
+                s.elapsedMin += 1;
+                // Jitter bandwidth
+                s.rxKbps = Math.max(5, s.rxKbps + Math.floor(Math.random() * 20 - 10));
+                s.txKbps = Math.max(2, s.txKbps + Math.floor(Math.random() * 15 - 7));
+            });
+            renderSessions();
+        }
+
+        function getCurrentTime() {
+            const now = new Date();
+            return `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+        }
+
+        // ===================================================================
+        // INIT
+        // ===================================================================
+        renderSessions();
+        renderAudit();
+        setInterval(tickElapsed, 5000);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hardware Lifecycle & RMA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;600&family=Orbitron:wght@400;600;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --voc-gold: #d4af37;
+            --voc-bronze: #806b45;
+        }
+
+        body {
+            background-color: transparent;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            padding: 24px;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #806b45; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d4af37; }
+
+        .font-voc { font-family: 'Cinzel', serif; }
+        .font-tech { font-family: 'Inter', sans-serif; }
+        .font-display { font-family: 'Orbitron', sans-serif; }
+
+        .voc-panel {
+            background: rgba(10, 20, 30, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Kanban Pipeline */
+        .kanban-column {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        .kanban-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .kanban-body {
+            padding: 12px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* RMA Card */
+        .rma-card {
+            background: rgba(10, 20, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .rma-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .rma-card:hover::after { opacity: 1; }
+        .rma-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        .rma-card.stage-fault::after { background: #ef4444; }
+        .rma-card.stage-awaiting::after { background: #eab308; }
+        .rma-card.stage-shipped::after { background: #3b82f6; }
+        .rma-card.stage-received::after { background: #22c55e; }
+
+        /* Inventory Table */
+        .inv-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .inv-table thead th {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #6b7280;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: left;
+            white-space: nowrap;
+        }
+        .inv-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .inv-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+        .inv-table tbody td {
+            padding: 10px 12px;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: middle;
+        }
+
+        /* Stock Level Bar */
+        .stock-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .stock-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        /* Asset Detail Drawer */
+        .asset-drawer {
+            position: fixed;
+            top: 0; right: -520px;
+            width: 520px;
+            height: 100vh;
+            background: rgba(5, 10, 18, 0.95);
+            backdrop-filter: blur(24px);
+            border-left: 1px solid rgba(212, 175, 55, 0.2);
+            z-index: 100;
+            transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            box-shadow: -10px 0 40px rgba(0, 0, 0, 0.6);
+        }
+        .asset-drawer.open { right: 0; }
+
+        .drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .drawer-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Warranty Badge */
+        .warranty-active {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        .warranty-expiring {
+            background: rgba(234, 179, 8, 0.15);
+            color: #facc15;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+        .warranty-expired {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Pipeline progress dots */
+        .pipeline-progress {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .pipeline-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.2s ease;
+        }
+        .pipeline-dot.complete { background: var(--voc-gold); border-color: var(--voc-gold); }
+        .pipeline-dot.current { background: transparent; border-color: var(--voc-gold); box-shadow: 0 0 6px rgba(212, 175, 55, 0.4); }
+        .pipeline-line {
+            width: 12px; height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .pipeline-line.complete { background: var(--voc-gold); }
+
+        /* Namespace badge */
+        .namespace-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        /* Toast */
+        .toast-notification {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            opacity: 0;
+            transition: all 0.35s ease;
+            z-index: 200;
+        }
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Move buttons */
+        .move-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            background: rgba(212, 175, 55, 0.08);
+            color: #d4af37;
+        }
+        .move-btn:hover {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: #d4af37;
+        }
+    </style>
+</head>
+
+<body class="pb-10">
+
+    <!-- ===== HEADER ===== -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <i data-lucide="cpu" class="w-5 h-5 text-[#d4af37]"></i>
+            <h2 class="font-voc text-xl text-white font-bold tracking-wider uppercase">Hardware Lifecycle & RMA</h2>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="namespace-badge">
+                <i data-lucide="lock" class="w-3 h-3"></i>
+                Namespace: maintenance_manager · Read-Only Inventory Sync
+            </span>
+        </div>
+    </div>
+
+    <!-- ===== KPI ROW ===== -->
+    <div class="grid grid-cols-5 gap-4 mb-6">
+        <div class="voc-panel p-4">
+            <p class="text-[9px] font-tech uppercase tracking-widest text-gray-500 mb-1">Total Assets</p>
+            <p class="font-display text-2xl text-white" id="kpi-total">48</p>
+        </div>
+        <div class="voc-panel p-4">
+            <p class="text-[9px] font-tech uppercase tracking-widest text-gray-500 mb-1">Under Warranty</p>
+            <p class="font-display text-2xl text-emerald-400" id="kpi-warranty">38</p>
+        </div>
+        <div class="voc-panel p-4">
+            <p class="text-[9px] font-tech uppercase tracking-widest text-gray-500 mb-1">Expiring Soon</p>
+            <p class="font-display text-2xl text-amber-400" id="kpi-expiring">5</p>
+        </div>
+        <div class="voc-panel p-4">
+            <p class="text-[9px] font-tech uppercase tracking-widest text-gray-500 mb-1">Active RMAs</p>
+            <p class="font-display text-2xl text-blue-400" id="kpi-rma">4</p>
+        </div>
+        <div class="voc-panel p-4">
+            <p class="text-[9px] font-tech uppercase tracking-widest text-gray-500 mb-1">Stock Low</p>
+            <p class="font-display text-2xl text-red-400" id="kpi-low-stock">2</p>
+        </div>
+    </div>
+
+    <!-- ===== EXPERIENCE INVENTORY TABLE ===== -->
+    <div class="voc-panel p-6 mb-6">
+        <div class="flex items-center gap-2 mb-5 pb-3 border-b border-white/10">
+            <i data-lucide="package" class="w-4 h-4 text-[#d4af37]"></i>
+            <h3 class="font-voc text-sm text-white font-bold tracking-wider">EXPERIENCE HARDWARE INVENTORY</h3>
+            <span class="namespace-badge ml-auto">
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i> Synced from inventory_manager
+            </span>
+        </div>
+
+        <div class="overflow-x-auto max-h-72 overflow-y-auto">
+            <table class="inv-table" id="inv-table">
+                <thead>
+                    <tr>
+                        <th>Hardware Type</th>
+                        <th>Total</th>
+                        <th>Deployed</th>
+                        <th>Spare</th>
+                        <th>Stock Level</th>
+                        <th>In RMA</th>
+                        <th>Warranty Status</th>
+                    </tr>
+                </thead>
+                <tbody id="inv-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===== RMA PIPELINE KANBAN ===== -->
+    <div class="voc-panel p-6">
+        <div class="flex items-center gap-2 mb-5 pb-3 border-b border-white/10">
+            <i data-lucide="arrow-right-left" class="w-4 h-4 text-[#d4af37]"></i>
+            <h3 class="font-voc text-sm text-white font-bold tracking-wider">RMA PIPELINE</h3>
+            <span class="text-[9px] text-gray-600 font-tech uppercase tracking-widest ml-auto">Drag & Progress Tracking</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="kanban-board">
+            <!-- Columns generated by JS -->
+        </div>
+    </div>
+
+    <!-- ===== ASSET DETAIL DRAWER ===== -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+    <div class="asset-drawer" id="asset-drawer">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[rgba(5,10,18,0.98)] z-10">
+            <div>
+                <h3 class="font-voc text-lg text-white font-bold tracking-wider" id="drawer-asset-name">—</h3>
+                <p class="text-[10px] font-tech text-gray-400 uppercase tracking-widest mt-1" id="drawer-asset-type">—</p>
+            </div>
+            <button onclick="closeDrawer()" class="text-gray-400 hover:text-white transition p-2">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-6">
+            <!-- Asset Metadata -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-[9px] font-tech text-gray-500 uppercase tracking-widest mb-1">Asset ID</p>
+                    <p class="text-sm text-white font-display tracking-wide" id="drawer-id">—</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-tech text-gray-500 uppercase tracking-widest mb-1">Zone</p>
+                    <p class="text-sm text-white font-tech" id="drawer-zone">—</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-tech text-gray-500 uppercase tracking-widest mb-1">Installation Date</p>
+                    <p class="text-sm text-white font-display tracking-wide" id="drawer-install">—</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-tech text-gray-500 uppercase tracking-widest mb-1">Warranty Expiration</p>
+                    <p class="text-sm font-display tracking-wide" id="drawer-warranty-date">—</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-tech text-gray-500 uppercase tracking-widest mb-1">Warranty Status</p>
+                    <div id="drawer-warranty-badge"></div>
+                </div>
+                <div>
+                    <p class="text-[9px] font-tech text-gray-500 uppercase tracking-widest mb-1">Serial Number</p>
+                    <p class="text-sm text-white font-tech" id="drawer-serial">—</p>
+                </div>
+            </div>
+
+            <!-- RMA Status -->
+            <div id="drawer-rma-section" class="hidden">
+                <div class="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
+                    <i data-lucide="package-x" class="w-4 h-4 text-amber-400"></i>
+                    <h4 class="text-xs font-tech text-amber-300 uppercase tracking-widest font-bold">RMA Tracking</h4>
+                </div>
+                <div class="flex items-center gap-3 mb-3" id="drawer-pipeline-viz"></div>
+                <div class="p-3 rounded-lg bg-black/40 border border-white/5">
+                    <p class="text-[9px] font-tech text-gray-500 uppercase tracking-widest mb-1">RMA Status</p>
+                    <p class="text-sm text-white font-tech" id="drawer-rma-status">—</p>
+                    <p class="text-[9px] font-tech text-gray-500 mt-2 uppercase tracking-widest mb-1">RMA Number</p>
+                    <p class="text-sm text-white font-display tracking-wider" id="drawer-rma-number">—</p>
+                </div>
+            </div>
+
+            <!-- WO History -->
+            <div>
+                <div class="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
+                    <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
+                    <h4 class="text-xs font-tech text-gray-300 uppercase tracking-widest font-bold">Work Order History</h4>
+                </div>
+                <div class="space-y-2 max-h-64 overflow-y-auto pr-2" id="drawer-wo-history"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast-notification" id="toast">
+        <div class="bg-emerald-900/90 border border-emerald-500/50 text-white px-6 py-3.5 rounded-lg shadow-xl flex items-center gap-3 backdrop-blur-md">
+            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+            <span class="text-sm font-tech font-bold tracking-wide" id="toast-msg"></span>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // ===================================================================
+        // MOCK DATA
+        // ===================================================================
+        const inventoryData = [
+            { type: 'Depth Camera (Orbbec)', total: 12, deployed: 10, spare: 2, inRma: 1, warrantyPct: 100 },
+            { type: 'Projector (Epson)', total: 10, deployed: 8, spare: 1, inRma: 1, warrantyPct: 80 },
+            { type: 'PLC Controller (Siemens)', total: 6, deployed: 6, spare: 0, inRma: 0, warrantyPct: 100 },
+            { type: 'Edge Switch (Cisco)', total: 5, deployed: 5, spare: 0, inRma: 1, warrantyPct: 60 },
+            { type: 'LED Matrix Controller', total: 3, deployed: 2, spare: 1, inRma: 0, warrantyPct: 100 },
+            { type: 'Haptic Floor Module', total: 2, deployed: 1, spare: 0, inRma: 1, warrantyPct: 50 },
+            { type: 'UPS Unit (APC)', total: 2, deployed: 2, spare: 0, inRma: 0, warrantyPct: 100 },
+            { type: 'Access Control Panel', total: 2, deployed: 1, spare: 1, inRma: 0, warrantyPct: 100 },
+            { type: 'Core Switch (Cisco)', total: 2, deployed: 2, spare: 0, inRma: 0, warrantyPct: 100 },
+            { type: 'Edge Compute Node', total: 2, deployed: 1, spare: 1, inRma: 0, warrantyPct: 100 },
+            { type: 'NVR Cluster', total: 1, deployed: 1, spare: 0, inRma: 0, warrantyPct: 100 },
+            { type: 'PAM Gateway', total: 1, deployed: 1, spare: 0, inRma: 0, warrantyPct: 100 },
+        ];
+
+        const rmaStages = ['fault_detected', 'awaiting_vendor', 'shipped', 'received'];
+        const rmaLabels = {
+            fault_detected: 'Fault Detected',
+            awaiting_vendor: 'Awaiting Vendor RMA',
+            shipped: 'Shipped',
+            received: 'Replacement Received'
+        };
+        const rmaColors = {
+            fault_detected: { border: 'border-red-500/30', text: 'text-red-400', bg: 'bg-red-500/10', dot: 'bg-red-500' },
+            awaiting_vendor: { border: 'border-amber-500/30', text: 'text-amber-400', bg: 'bg-amber-500/10', dot: 'bg-amber-500' },
+            shipped: { border: 'border-blue-500/30', text: 'text-blue-400', bg: 'bg-blue-500/10', dot: 'bg-blue-500' },
+            received: { border: 'border-emerald-500/30', text: 'text-emerald-400', bg: 'bg-emerald-500/10', dot: 'bg-emerald-500' }
+        };
+
+        let rmaItems = [
+            {
+                id: 'RMA-0071', assetId: 'CI-2005', name: 'Projector IL-B', type: 'Projector (Epson)',
+                zone: 'Sector 2 — Immersion Lab', stage: 'fault_detected',
+                serial: 'EPS-9X-44210', installDate: '2024-06-15', warrantyExpiry: '2026-06-15',
+                faultDate: '2026-03-08', vendor: 'Epson Technical Services',
+                woHistory: ['WO-4088', 'WO-4055', 'WO-3991']
+            },
+            {
+                id: 'RMA-0069', assetId: 'CI-4008', name: 'Haptic Floor GE', type: 'Haptic Floor Module',
+                zone: 'Sector 4 — Gallery East', stage: 'awaiting_vendor',
+                serial: 'HPT-FL-88901', installDate: '2025-01-10', warrantyExpiry: '2026-07-10',
+                faultDate: '2026-03-01', vendor: 'Crestron Engineering',
+                woHistory: ['WO-4072', 'WO-4020']
+            },
+            {
+                id: 'RMA-0065', assetId: 'CI-2001', name: 'Edge Switch B1', type: 'Edge Switch (Cisco)',
+                zone: 'Sector 2 — Immersion Lab', stage: 'shipped',
+                serial: 'CSC-SW-55102', installDate: '2024-03-20', warrantyExpiry: '2026-03-20',
+                faultDate: '2026-02-18', vendor: 'Cisco TAC',
+                woHistory: ['WO-4087', 'WO-4061', 'WO-4033', 'WO-3980']
+            },
+            {
+                id: 'RMA-0060', assetId: 'CI-1002', name: 'Depth Cam M1-01', type: 'Depth Camera (Orbbec)',
+                zone: 'Sector 1 — Main Hall', stage: 'received',
+                serial: 'ORB-DC-77543', installDate: '2024-08-01', warrantyExpiry: '2026-08-01',
+                faultDate: '2026-01-22', vendor: 'Orbbec Support',
+                woHistory: ['WO-4040', 'WO-3998']
+            },
+        ];
+
+        const allAssets = [
+            { id: 'CI-1001', name: 'Edge Switch A1', type: 'Edge Switch', zone: 'Sector 1 — Main Hall', serial: 'CSC-SW-55101', installDate: '2024-03-20', warrantyExpiry: '2027-03-20', woHistory: ['WO-4010'] },
+            { id: 'CI-1002', name: 'Depth Cam M1-01', type: 'Depth Camera', zone: 'Sector 1 — Main Hall', serial: 'ORB-DC-77543', installDate: '2024-08-01', warrantyExpiry: '2026-08-01', woHistory: ['WO-4040', 'WO-3998'] },
+            { id: 'CI-1004', name: 'Projector M1-A', type: 'Projector', zone: 'Sector 1 — Main Hall', serial: 'EPS-9X-44208', installDate: '2024-06-15', warrantyExpiry: '2026-06-15', woHistory: ['WO-4088', 'WO-4022'] },
+            { id: 'CI-2001', name: 'Edge Switch B1', type: 'Edge Switch', zone: 'Sector 2 — Immersion Lab', serial: 'CSC-SW-55102', installDate: '2024-03-20', warrantyExpiry: '2026-03-20', woHistory: ['WO-4087', 'WO-4061', 'WO-4033', 'WO-3980'] },
+            { id: 'CI-2005', name: 'Projector IL-B', type: 'Projector', zone: 'Sector 2 — Immersion Lab', serial: 'EPS-9X-44210', installDate: '2024-06-15', warrantyExpiry: '2026-06-15', woHistory: ['WO-4088', 'WO-4055', 'WO-3991'] },
+            { id: 'CI-3004', name: 'PLC Corridor W', type: 'PLC', zone: 'Sector 3 — Corridor West', serial: 'SIE-PLC-30201', installDate: '2024-09-01', warrantyExpiry: '2027-09-01', woHistory: ['WO-4082'] },
+            { id: 'CI-4002', name: 'Depth Cam GE-01', type: 'Depth Camera', zone: 'Sector 4 — Gallery East', serial: 'ORB-DC-77550', installDate: '2025-01-15', warrantyExpiry: '2027-01-15', woHistory: ['WO-4070'] },
+            { id: 'CI-4008', name: 'Haptic Floor GE', type: 'Haptic Module', zone: 'Sector 4 — Gallery East', serial: 'HPT-FL-88901', installDate: '2025-01-10', warrantyExpiry: '2026-07-10', woHistory: ['WO-4072', 'WO-4020'] },
+            { id: 'CI-6007', name: 'HVAC Controller', type: 'Environmental', zone: 'Sector 6 — Server Room', serial: 'SCH-HV-62001', installDate: '2024-04-01', warrantyExpiry: '2026-10-01', woHistory: ['WO-4089'] },
+        ];
+
+        // ===================================================================
+        // RENDER INVENTORY TABLE
+        // ===================================================================
+        function renderInventory() {
+            const tbody = document.getElementById('inv-tbody');
+            tbody.innerHTML = '';
+
+            inventoryData.forEach(item => {
+                const stockPct = item.spare > 0 ? Math.round((item.spare / item.total) * 100) : 0;
+                const stockColor = stockPct === 0 ? '#ef4444' : (stockPct < 20 ? '#eab308' : '#22c55e');
+                const stockLabel = stockPct === 0 ? 'CRITICAL' : (stockPct < 20 ? 'LOW' : 'OK');
+                const stockLabelColor = stockPct === 0 ? 'text-red-400' : (stockPct < 20 ? 'text-amber-400' : 'text-emerald-400');
+
+                const warrantyColor = item.warrantyPct >= 80 ? 'warranty-active' : (item.warrantyPct >= 50 ? 'warranty-expiring' : 'warranty-expired');
+                const warrantyText = item.warrantyPct >= 80 ? 'Active' : (item.warrantyPct >= 50 ? 'Expiring' : 'Expired');
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="font-tech text-white text-xs font-medium">${item.type}</td>
+                    <td class="font-display text-xs text-gray-300 tracking-wider">${item.total}</td>
+                    <td class="font-display text-xs text-gray-300 tracking-wider">${item.deployed}</td>
+                    <td class="font-display text-xs ${stockLabelColor} tracking-wider font-bold">${item.spare}</td>
+                    <td>
+                        <div class="flex items-center gap-2">
+                            <div class="stock-bar flex-1">
+                                <div class="stock-bar-fill" style="width:${Math.max(stockPct, 8)}%; background:${stockColor}"></div>
+                            </div>
+                            <span class="text-[8px] font-bold ${stockLabelColor} uppercase tracking-widest">${stockLabel}</span>
+                        </div>
+                    </td>
+                    <td class="font-display text-xs ${item.inRma > 0 ? 'text-amber-400' : 'text-gray-600'} tracking-wider">${item.inRma}</td>
+                    <td>
+                        <span class="text-[8px] font-bold uppercase tracking-widest px-2 py-1 rounded ${warrantyColor}">${warrantyText} (${item.warrantyPct}%)</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ===================================================================
+        // RENDER KANBAN BOARD
+        // ===================================================================
+        function renderKanban() {
+            const board = document.getElementById('kanban-board');
+            board.innerHTML = '';
+
+            const icons = {
+                fault_detected: 'alert-circle',
+                awaiting_vendor: 'hourglass',
+                shipped: 'truck',
+                received: 'package-check'
+            };
+
+            rmaStages.forEach((stage, stageIdx) => {
+                const items = rmaItems.filter(r => r.stage === stage);
+                const colors = rmaColors[stage];
+
+                const col = document.createElement('div');
+                col.className = 'kanban-column';
+                col.innerHTML = `
+                    <div class="kanban-header">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="${icons[stage]}" class="w-3.5 h-3.5 ${colors.text}"></i>
+                            <span class="text-[10px] font-tech font-bold ${colors.text} uppercase tracking-widest">${rmaLabels[stage]}</span>
+                        </div>
+                        <span class="font-display text-xs text-gray-500">${items.length}</span>
+                    </div>
+                    <div class="kanban-body" id="kanban-${stage}">
+                        ${items.length === 0 ? '<p class="text-[9px] text-gray-600 font-tech italic text-center py-4">No items</p>' : ''}
+                        ${items.map(item => {
+                            const nextStage = stageIdx < rmaStages.length - 1 ? rmaStages[stageIdx + 1] : null;
+                            return `
+                                <div class="rma-card stage-${stage}" onclick="openAssetDrawer('${item.assetId}')">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="font-display text-[10px] text-white font-bold tracking-wider">${item.id}</span>
+                                        <div class="pipeline-progress">
+                                            ${rmaStages.map((s, i) => {
+                                                const dotClass = i < stageIdx ? 'complete' : (i === stageIdx ? 'current' : '');
+                                                const lineClass = i < stageIdx ? 'complete' : '';
+                                                return (i > 0 ? `<div class="pipeline-line ${lineClass}"></div>` : '') + `<div class="pipeline-dot ${dotClass}"></div>`;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-white font-medium mb-0.5">${item.name}</p>
+                                    <p class="text-[9px] text-gray-500 font-tech mb-2">${item.assetId} · ${item.zone}</p>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[9px] text-gray-600 font-tech">${item.vendor}</span>
+                                        ${nextStage ? `<button class="move-btn" onclick="event.stopPropagation(); moveRMA('${item.id}', '${nextStage}')">→ ${rmaLabels[nextStage].split(' ')[0]}</button>` : '<span class="text-[8px] text-emerald-400 font-bold uppercase tracking-widest font-tech">Complete</span>'}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                board.appendChild(col);
+            });
+
+            lucide.createIcons();
+        }
+
+        // ===================================================================
+        // MOVE RMA STAGE
+        // ===================================================================
+        function moveRMA(rmaId, newStage) {
+            const item = rmaItems.find(r => r.id === rmaId);
+            if (item) {
+                item.stage = newStage;
+                renderKanban();
+                showToast(`${rmaId} moved to "${rmaLabels[newStage]}"`);
+            }
+        }
+
+        // ===================================================================
+        // ASSET DETAIL DRAWER
+        // ===================================================================
+        function openAssetDrawer(assetId) {
+            const asset = allAssets.find(a => a.id === assetId);
+            if (!asset) return;
+
+            document.getElementById('drawer-asset-name').textContent = asset.name;
+            document.getElementById('drawer-asset-type').textContent = asset.type;
+            document.getElementById('drawer-id').textContent = asset.id;
+            document.getElementById('drawer-zone').textContent = asset.zone;
+            document.getElementById('drawer-install').textContent = formatDate(asset.installDate);
+            document.getElementById('drawer-serial').textContent = asset.serial;
+
+            const warrantyDate = new Date(asset.warrantyExpiry);
+            const now = new Date();
+            const daysLeft = Math.ceil((warrantyDate - now) / (1000 * 60 * 60 * 24));
+            document.getElementById('drawer-warranty-date').textContent = formatDate(asset.warrantyExpiry);
+            document.getElementById('drawer-warranty-date').className = `text-sm font-display tracking-wide ${daysLeft > 90 ? 'text-emerald-400' : (daysLeft > 0 ? 'text-amber-400' : 'text-red-400')}`;
+
+            const badgeClass = daysLeft > 90 ? 'warranty-active' : (daysLeft > 0 ? 'warranty-expiring' : 'warranty-expired');
+            const badgeText = daysLeft > 90 ? `Active — ${daysLeft} days remaining` : (daysLeft > 0 ? `Expiring — ${daysLeft} days remaining` : 'Expired');
+            document.getElementById('drawer-warranty-badge').innerHTML = `<span class="text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded ${badgeClass}">${badgeText}</span>`;
+
+            // RMA Section
+            const rmaItem = rmaItems.find(r => r.assetId === assetId);
+            const rmaSection = document.getElementById('drawer-rma-section');
+            if (rmaItem) {
+                rmaSection.classList.remove('hidden');
+                document.getElementById('drawer-rma-status').textContent = rmaLabels[rmaItem.stage];
+                document.getElementById('drawer-rma-number').textContent = rmaItem.id;
+
+                const stageIdx = rmaStages.indexOf(rmaItem.stage);
+                document.getElementById('drawer-pipeline-viz').innerHTML = rmaStages.map((s, i) => {
+                    const dotClass = i < stageIdx ? 'complete' : (i === stageIdx ? 'current' : '');
+                    const lineClass = i < stageIdx ? 'complete' : '';
+                    const label = rmaLabels[s].split(' ')[0];
+                    return `
+                        ${i > 0 ? `<div class="pipeline-line ${lineClass}" style="width:20px;"></div>` : ''}
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="pipeline-dot ${dotClass}"></div>
+                            <span class="text-[7px] text-gray-500 uppercase tracking-widest">${label}</span>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                rmaSection.classList.add('hidden');
+            }
+
+            // WO History
+            const woHistory = document.getElementById('drawer-wo-history');
+            woHistory.innerHTML = asset.woHistory.map((wo, i) => {
+                const dates = ['2026-03-08', '2026-01-15', '2025-10-22', '2025-07-05'];
+                const descs = [
+                    'Diagnostic: Frame rate degradation reported. Firmware reflashed.',
+                    'Preventive: Scheduled lens cleaning and thermal compound replacement.',
+                    'Corrective: Replaced faulty HDMI interface module.',
+                    'Installation: Initial deployment and commissioning.'
+                ];
+                return `
+                    <div class="p-3 rounded-lg bg-black/30 border border-white/5 border-l-2 border-l-[#d4af37]/30">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-display text-[10px] text-white font-bold tracking-wider">${wo}</span>
+                            <span class="text-[9px] text-gray-500 font-tech">${dates[i] || '2025-03-01'}</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 font-tech leading-relaxed">${descs[i] || 'Maintenance activity performed.'}</p>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('asset-drawer').classList.add('open');
+            document.getElementById('drawer-overlay').classList.add('open');
+            lucide.createIcons();
+        }
+
+        function closeDrawer() {
+            document.getElementById('asset-drawer').classList.remove('open');
+            document.getElementById('drawer-overlay').classList.remove('open');
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        // ===================================================================
+        // TOAST
+        // ===================================================================
+        function showToast(msg) {
+            document.getElementById('toast-msg').textContent = msg;
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        // ===================================================================
+        // INIT
+        // ===================================================================
+        renderInventory();
+        renderKanban();
+    </script>
+</body>
+
+</html>
